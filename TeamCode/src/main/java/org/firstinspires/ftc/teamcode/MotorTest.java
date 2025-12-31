@@ -1,7 +1,10 @@
 package org.firstinspires.ftc.teamcode;
 
+import static com.qualcomm.robotcore.hardware.DcMotor.ZeroPowerBehavior.BRAKE;
+
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
@@ -10,6 +13,15 @@ import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 @TeleOp(name="WithController", group="Robot")
 public class MotorTest extends LinearOpMode {
     private DcMotorEx motor;
+    private DcMotor leftFrontDrive = null;
+    private DcMotor rightFrontDrive = null;
+    private DcMotor leftBackDrive = null;
+    private DcMotor rightBackDrive = null;
+    double leftFrontPower;
+    double rightFrontPower;
+    double leftBackPower;
+    double rightBackPower;
+
 
     // These variables can be tuned from the FTC Dashboard
     public static double P = 10.0;
@@ -22,8 +34,26 @@ public class MotorTest extends LinearOpMode {
     boolean dpadDownPressed = false;
 
 
+
+
     @Override
     public void runOpMode() {
+
+        leftFrontDrive = hardwareMap.get(DcMotor.class, "fl");
+        rightFrontDrive = hardwareMap.get(DcMotor.class, "fr");
+        leftBackDrive = hardwareMap.get(DcMotor.class, "bl");
+        rightBackDrive = hardwareMap.get(DcMotor.class, "br");
+        leftFrontDrive.setDirection(DcMotor.Direction.REVERSE);
+        rightFrontDrive.setDirection(DcMotor.Direction.FORWARD);
+        leftBackDrive.setDirection(DcMotor.Direction.REVERSE);
+        rightBackDrive.setDirection(DcMotor.Direction.FORWARD);
+        leftFrontDrive.setZeroPowerBehavior(BRAKE);
+        rightFrontDrive.setZeroPowerBehavior(BRAKE);
+        leftBackDrive.setZeroPowerBehavior(BRAKE);
+        rightBackDrive.setZeroPowerBehavior(BRAKE);
+
+        mecanumDrive(-gamepad1.left_stick_y, gamepad1.left_stick_x, -gamepad1.right_stick_x);
+
 
         // Get the motor from the hardware map
         motor = hardwareMap.get(DcMotorEx.class, "launcher");
@@ -89,5 +119,24 @@ public class MotorTest extends LinearOpMode {
 ////            telemetry.addData("Status", status);
 //            telemetry.update();
         }
+    }
+    void mecanumDrive(double forward, double strafe, double rotate){
+
+        /* the denominator is the largest motor power (absolute value) or 1
+         * This ensures all the powers maintain the same ratio,
+         * but only if at least one is out of the range [-1, 1]
+         */
+        double denominator = Math.max(Math.abs(forward) + Math.abs(strafe) + Math.abs(rotate), 1);
+
+        leftFrontPower = (forward + strafe + rotate) / denominator;
+        rightFrontPower = (forward - strafe - rotate) / denominator;
+        leftBackPower = (forward - strafe + rotate) / denominator;
+        rightBackPower = (forward + strafe - rotate) / denominator;
+
+        leftFrontDrive.setPower(leftFrontPower);
+        rightFrontDrive.setPower(rightFrontPower);
+        leftBackDrive.setPower(leftBackPower);
+        rightBackDrive.setPower(rightBackPower);
+
     }
 }

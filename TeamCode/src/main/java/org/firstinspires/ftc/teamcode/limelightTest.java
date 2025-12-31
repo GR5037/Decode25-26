@@ -1,11 +1,14 @@
 package org.firstinspires.ftc.teamcode;
 
+import static com.qualcomm.robotcore.hardware.DcMotor.ZeroPowerBehavior.BRAKE;
+
 import com.pedropathing.geometry.Pose;
 import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
+import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.IMU;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
@@ -15,6 +18,14 @@ import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 
 @Autonomous
 public class limelightTest extends OpMode {
+    private DcMotor leftFrontDrive = null;
+    private DcMotor rightFrontDrive = null;
+    private DcMotor leftBackDrive = null;
+    private DcMotor rightBackDrive = null;
+    double leftFrontPower;
+    double rightFrontPower;
+    double leftBackPower;
+    double rightBackPower;
 
     private Limelight3A limelight;
     private DcMotorEx turretMotor;
@@ -33,8 +44,24 @@ public class limelightTest extends OpMode {
 
     @Override
     public void init() {
+        leftFrontDrive = hardwareMap.get(DcMotor.class, "fl");
+        rightFrontDrive = hardwareMap.get(DcMotor.class, "fr");
+        leftBackDrive = hardwareMap.get(DcMotor.class, "bl");
+        rightBackDrive = hardwareMap.get(DcMotor.class, "br");
+
+        leftFrontDrive.setDirection(DcMotor.Direction.REVERSE);
+        rightFrontDrive.setDirection(DcMotor.Direction.FORWARD);
+        leftBackDrive.setDirection(DcMotor.Direction.REVERSE);
+        rightBackDrive.setDirection(DcMotor.Direction.FORWARD);
+
+        leftFrontDrive.setZeroPowerBehavior(BRAKE);
+        rightFrontDrive.setZeroPowerBehavior(BRAKE);
+        leftBackDrive.setZeroPowerBehavior(BRAKE);
+        rightBackDrive.setZeroPowerBehavior(BRAKE);
+
         limelight = hardwareMap.get(Limelight3A.class, "limelight");
         turretMotor = hardwareMap.get(DcMotorEx.class, "turret");
+
 
         PIDFCoefficients newPIDF = new PIDFCoefficients(P, I, D, F);
         turretMotor.setVelocityPIDFCoefficients(newPIDF.p, newPIDF.i, newPIDF.d, newPIDF.f);
@@ -54,6 +81,8 @@ public class limelightTest extends OpMode {
 
     @Override
     public void loop() {
+        mecanumDrive(-gamepad1.left_stick_y, gamepad1.left_stick_x, -gamepad1.right_stick_x);
+
         YawPitchRollAngles orientation = imu.getRobotYawPitchRollAngles();
         limelight.updateRobotOrientation(orientation.getYaw());
 
@@ -61,11 +90,9 @@ public class limelightTest extends OpMode {
 
         if (llResult !=  null && llResult.isValid()) {
             double tx = llResult.getTx();
-            double ty = llResult.getTy();
             double coverage = llResult.getTa();
 
             telemetry.addData("Tx", tx);
-            telemetry.addData("Ty", ty);
             telemetry.addData("Coverage %", coverage);
 
             double pTerm = tx * kPTurret;
@@ -100,4 +127,19 @@ public class limelightTest extends OpMode {
         }
         telemetry.update();
     }
-}
+
+    void mecanumDrive(double forward, double strafe, double rotate) {
+        double denominator = Math.max(Math.abs(forward) + Math.abs(strafe) + Math.abs(rotate), 1);
+
+        leftFrontPower = (forward + strafe + rotate) / denominator;
+        rightFrontPower = (forward - strafe - rotate) / denominator;
+        leftBackPower = (forward - strafe + rotate) / denominator;
+        rightBackPower = (forward + strafe - rotate) / denominator;
+
+        leftFrontDrive.setPower(leftFrontPower);
+        rightFrontDrive.setPower(rightFrontPower);
+        leftBackDrive.setPower(leftBackPower);
+        rightBackDrive.setPower(rightBackPower);
+    }
+
+    }

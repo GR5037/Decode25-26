@@ -9,6 +9,7 @@ import com.pedropathing.follower.Follower;
 import com.pedropathing.follower.FollowerConstants;
 import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
 import com.pedropathing.localization.Localizer;
+import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.hardware.AnalogInput;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.ColorRangeSensor;
@@ -28,7 +29,9 @@ public class Robot {
     private DcMotorEx rightFrontDrive = null;
     private DcMotorEx leftBackDrive = null;
     private DcMotorEx rightBackDrive = null;
-   private final double FEED_TIME_SECONDS = 0.20;
+    private Limelight3A limelight;
+
+    private final double FEED_TIME_SECONDS = 0.20;
     private final double STOP_SPEED = 0.0;
     private final double FULL_SPEED = 1.0;
     private final double LAUNCHER_TARGET_VELOCITY = 485;
@@ -53,6 +56,8 @@ public class Robot {
         rightFrontDrive = hardwareMap.get(DcMotorEx.class, "fr");
         leftBackDrive = hardwareMap.get(DcMotorEx.class, "bl");
         rightBackDrive = hardwareMap.get(DcMotorEx.class, "br");
+        limelight = hardwareMap.get(Limelight3A.class, "limelight");
+
 
         leftFrontDrive.setDirection(DcMotorEx.Direction.REVERSE);
         rightFrontDrive.setDirection(DcMotorEx.Direction.FORWARD);

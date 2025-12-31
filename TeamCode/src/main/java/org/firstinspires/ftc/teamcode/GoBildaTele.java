@@ -34,6 +34,7 @@ package org.firstinspires.ftc.teamcode;
 
 import static com.qualcomm.robotcore.hardware.DcMotor.ZeroPowerBehavior.BRAKE;
 
+import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.CRServo;
@@ -42,6 +43,8 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.util.ElapsedTime;
+import com.qualcomm.hardware.limelightvision.LLResult;
+
 
 /*
  * This file includes a teleop (driver-controlled) file for the goBILDA® StarterBot for the
@@ -61,10 +64,10 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 @TeleOp(name = "NewGoBildaTele", group = "StarterBot")
 //@Disabled
 public class GoBildaTele extends OpMode {
-    final double FEED_TIME_SECONDS = 0.200; //The feeder servos run this long when a shot is requested. 0.075
+    final double FEED_TIME_SECONDS = 0.09; //The feeder servos run this long when a shot is requested. 0.075
     final double DOWN_TIME_SECONDS = 0.9;
     final double STOP_SPEED = 0.0; //We send this power to the servos when we want them to stop.
-    final double FULL_SPEED = 1.0;
+    final double FULL_SPEED = 0.9;
 
     /*
      * When we control our launcher motor, we are using encoders. These allow the control system
@@ -72,8 +75,10 @@ public class GoBildaTele extends OpMode {
      * velocity. Here we are setting the target, and minimum velocity that the launcher should run
      * at. The minimum velocity is a threshold for determining when to fire.
      */
-    final double LAUNCHER_TARGET_VELOCITY = 1350; // 1st iteration 1125
-    final double LAUNCHER_MIN_VELOCITY = 1120;
+    double LAUNCHER_TARGET_VELOCITY = 1760; // 1st iteration 2000 for far, cut ramp
+    double LAUNCHER_MIN_VELOCITY = LAUNCHER_TARGET_VELOCITY - 80;
+    boolean dpadUpPressed = false;
+    boolean dpadDownPressed = false;
 
     // Declare OpMode members.
     private DcMotor leftFrontDrive = null;
@@ -83,6 +88,8 @@ public class GoBildaTele extends OpMode {
     private DcMotorEx launcher = null;
     private CRServo leftFeeder = null;
     private CRServo rightFeeder = null;
+    private Limelight3A limelight;
+
 
     ElapsedTime feederTimer = new ElapsedTime();
 
@@ -111,6 +118,8 @@ public class GoBildaTele extends OpMode {
 
     private LaunchState launchState;
 
+    private int velocityState = 0;
+
     // Setup a variable for each drive wheel to save power level for telemetry
     double leftFrontPower;
     double rightFrontPower;
@@ -136,6 +145,8 @@ public class GoBildaTele extends OpMode {
         launcher = hardwareMap.get(DcMotorEx.class, "launcher");
         leftFeeder = hardwareMap.get(CRServo.class, "left_feeder");
         rightFeeder = hardwareMap.get(CRServo.class, "right_feeder");
+        limelight = hardwareMap.get(Limelight3A.class, "limelight");
+
 
         /*
          * To drive forward, most robots need the motor on one side to be reversed,
@@ -144,10 +155,10 @@ public class GoBildaTele extends OpMode {
          * Note: The settings here assume direct drive on left and right wheels. Gear
          * Reduction or 90 Deg drives may require direction flips
          */
-        leftFrontDrive.setDirection(DcMotor.Direction.REVERSE);
-        rightFrontDrive.setDirection(DcMotor.Direction.FORWARD);
-        leftBackDrive.setDirection(DcMotor.Direction.REVERSE);
-        rightBackDrive.setDirection(DcMotor.Direction.FORWARD);
+        leftFrontDrive.setDirection(DcMotor.Direction.FORWARD);
+        rightFrontDrive.setDirection(DcMotor.Direction.REVERSE);
+        leftBackDrive.setDirection(DcMotor.Direction.FORWARD);
+        rightBackDrive.setDirection(DcMotor.Direction.REVERSE);
 
         launcher.setDirection(DcMotor.Direction.REVERSE);
 
@@ -186,6 +197,9 @@ public class GoBildaTele extends OpMode {
          */
         leftFeeder.setDirection(DcMotorSimple.Direction.REVERSE);
 
+        limelight.start();
+
+
         /*
          * Tell the driver that initialization is complete.
          */
@@ -211,6 +225,7 @@ public class GoBildaTele extends OpMode {
      */
     @Override
     public void loop() {
+        limelight.pipelineSwitch(3);
         /*
          * Here we call a function called arcadeDrive. The arcadeDrive function takes the input from
          * the joysticks, and applies power to the left and right drive motor to move the robot
@@ -220,17 +235,84 @@ public class GoBildaTele extends OpMode {
          * both motors work to rotate the robot. Combinations of these inputs can be used to create
          * more complex maneuvers.
          */
-        mecanumDrive(-gamepad1.left_stick_y, gamepad1.left_stick_x, -gamepad1.right_stick_x);
+        mecanumDrive(-gamepad1.left_stick_y, gamepad1.left_stick_x, gamepad1.right_stick_x);
+
+        LLResult llResult = limelight.getLatestResult();
+
 
         /*
          * Here we give the user control of the speed of the launcher motor without automatically
          * queuing a shot.
          */
-        if (gamepad1.y) {
-            launcher.setVelocity(LAUNCHER_TARGET_VELOCITY);
-        } else if (gamepad1.b) { // stop flywheel
-            launcher.setVelocity(STOP_SPEED);
+
+        switch (velocityState) {
+            case 0:
+                launcher.setVelocity(STOP_SPEED);
+
+                if (gamepad1.yWasPressed()) {
+                    velocityState = 1;
+                }
+
+                break;
+
+            case 1:
+                if (llResult.isValid()) {
+                    // Quadratic
+
+                    double part1 = 3.81382 * Math.pow(limelight.getLatestResult().getTy(), 2);
+                    double part2 = 85.49898 * limelight.getLatestResult().getTy();
+                    double intercept = 1889.39053;
+
+                    LAUNCHER_TARGET_VELOCITY = part1 - part2 + intercept;
+
+                    // Linear
+//                    double part1 = -44.00298 * limelight.getLatestResult().getTy();
+//                    double intercept = 1949.76907;
+//
+//                    LAUNCHER_TARGET_VELOCITY = part1 + intercept;
+
+                    // Exponential
+//                    double part1 = Math.pow(0.972946, limelight.getLatestResult().getTy());
+//                    double intercept = 1944.66114;
+//
+//                    LAUNCHER_TARGET_VELOCITY = part1 * intercept;
+
+                    LAUNCHER_MIN_VELOCITY = LAUNCHER_TARGET_VELOCITY - 80;
+
+                    launcher.setVelocity(LAUNCHER_TARGET_VELOCITY);
+                }
+                if (gamepad1.bWasPressed()) {
+                    velocityState = 0;
+                }
+
+                break;
         }
+
+//
+//        if (gamepad1.y) {
+//
+//            launcher.setVelocity(LAUNCHER_TARGET_VELOCITY);
+//        } else if (gamepad1.b) { // stop flywheel
+//            launcher.setVelocity(STOP_SPEED);
+//        }
+//
+
+//        if (gamepad1.dpad_up && !dpadUpPressed) {
+//            LAUNCHER_TARGET_VELOCITY += 20;
+//            LAUNCHER_MIN_VELOCITY += 20;
+//        }
+//        dpadUpPressed = gamepad1.dpad_up; // Update the button's state for the next loop
+//
+//        // Logic to decrease velocity on a single button press
+//        if (gamepad1.dpad_down && !dpadDownPressed) {
+//            LAUNCHER_TARGET_VELOCITY -= 20;
+//            LAUNCHER_MIN_VELOCITY -= 20;
+//        }
+//        dpadDownPressed = gamepad1.dpad_down; // Update the button's state for the next loop
+//
+//        // Set the motor's target velocity
+//        launcher.setVelocity(LAUNCHER_TARGET_VELOCITY);
+
 
         /*
          * Now we call our "Launch" function.
@@ -244,6 +326,11 @@ public class GoBildaTele extends OpMode {
         telemetry.addData("State", launchState);
         telemetry.addData("motorSpeed", launcher.getVelocity());
 
+        telemetry.addData("Limelight is 'running'", limelight.isRunning());
+        telemetry.addData("Limelight is 'connected'", limelight.isConnected());
+        telemetry.addData("Distance", limelight.getLatestResult().getTy());
+
+        telemetry.addData("Velocity State ", velocityState);
     }
 
     /*
