@@ -63,7 +63,7 @@ import com.qualcomm.hardware.limelightvision.LLResult;
 
 @TeleOp(name = "NewGoBildaTele", group = "StarterBot")
 //@Disabled
-public class GoBildaTele extends OpMode {
+public class Red_KitBotTele extends OpMode {
     final double FEED_TIME_SECONDS = 0.09; //The feeder servos run this long when a shot is requested. 0.075
     final double DOWN_TIME_SECONDS = 0.9;
     final double STOP_SPEED = 0.0; //We send this power to the servos when we want them to stop.
@@ -119,6 +119,8 @@ public class GoBildaTele extends OpMode {
     private LaunchState launchState;
 
     private int velocityState = 0;
+
+    private double autoAimPower = 0;
 
     // Setup a variable for each drive wheel to save power level for telemetry
     double leftFrontPower;
@@ -197,7 +199,8 @@ public class GoBildaTele extends OpMode {
          */
         leftFeeder.setDirection(DcMotorSimple.Direction.REVERSE);
 
-        limelight.start();
+
+        limelight.pipelineSwitch(3);
 
 
         /*
@@ -218,6 +221,7 @@ public class GoBildaTele extends OpMode {
      */
     @Override
     public void start() {
+        limelight.start();
     }
 
     /*
@@ -225,7 +229,7 @@ public class GoBildaTele extends OpMode {
      */
     @Override
     public void loop() {
-        limelight.pipelineSwitch(3);
+        LLResult llResult = limelight.getLatestResult();
         /*
          * Here we call a function called arcadeDrive. The arcadeDrive function takes the input from
          * the joysticks, and applies power to the left and right drive motor to move the robot
@@ -235,9 +239,15 @@ public class GoBildaTele extends OpMode {
          * both motors work to rotate the robot. Combinations of these inputs can be used to create
          * more complex maneuvers.
          */
-        mecanumDrive(-gamepad1.left_stick_y, gamepad1.left_stick_x, gamepad1.right_stick_x);
 
-        LLResult llResult = limelight.getLatestResult();
+        if (gamepad1.left_trigger > 0.5 && llResult.isValid()) {
+            autoAimPower = 0.1 * llResult.getTx();
+            mecanumDrive(-gamepad1.left_stick_y, gamepad1.left_stick_x, autoAimPower);
+        } else {
+            mecanumDrive(-gamepad1.left_stick_y, gamepad1.left_stick_x, gamepad1.right_stick_x);
+        }
+
+
 
 
         /*

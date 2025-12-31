@@ -46,7 +46,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 
 @TeleOp(name = "KitBotTele", group = "StarterBot")
-
+@Disabled
 public class KitBotTele extends OpMode {
     Robot robot = new Robot();
     private boolean flywheelOn = false;
