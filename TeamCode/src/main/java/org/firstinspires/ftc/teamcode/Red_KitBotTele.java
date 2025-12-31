@@ -61,7 +61,7 @@ import com.qualcomm.hardware.limelightvision.LLResult;
  * we will also need to adjust the "PIDF" coefficients with some that are a better fit for our application.
  */
 
-@TeleOp(name = "NewGoBildaTele", group = "StarterBot")
+@TeleOp(name = "Red_KitBotTele", group = "StarterBot")
 //@Disabled
 public class Red_KitBotTele extends OpMode {
     final double FEED_TIME_SECONDS = 0.09; //The feeder servos run this long when a shot is requested. 0.075
@@ -121,6 +121,10 @@ public class Red_KitBotTele extends OpMode {
     private int velocityState = 0;
 
     private double autoAimPower = 0;
+    private double previousAutoAimPower = 0;
+    private double previousAutoAimTime = 0;
+    private double autoAimRateOfChange = 0;
+
 
     // Setup a variable for each drive wheel to save power level for telemetry
     double leftFrontPower;
@@ -191,7 +195,7 @@ public class Red_KitBotTele extends OpMode {
         leftFeeder.setPower(STOP_SPEED);
         rightFeeder.setPower(STOP_SPEED);
 
-        launcher.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(300, 0, 0, 10));
+        launcher.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(90, 0, 0, 12.7362));
 
         /*
          * Much like our drivetrain motors, we set the left feeder servo to reverse so that they
@@ -201,6 +205,8 @@ public class Red_KitBotTele extends OpMode {
 
 
         limelight.pipelineSwitch(3);
+
+        resetRuntime();
 
 
         /*
@@ -240,8 +246,14 @@ public class Red_KitBotTele extends OpMode {
          * more complex maneuvers.
          */
 
+//        autoAimPower = 0.02 * llResult.getTx() + 0.001 * autoAimRateOfChange;
+//        autoAimRateOfChange = (autoAimPower - previousAutoAimPower) / (getRuntime() - previousAutoAimTime);
+//        previousAutoAimTime = getRuntime();
+//        previousAutoAimPower = autoAimPower;
+
+
         if (gamepad1.left_trigger > 0.5 && llResult.isValid()) {
-            autoAimPower = 0.1 * llResult.getTx();
+            autoAimPower = 0.03 * llResult.getTx();
             mecanumDrive(-gamepad1.left_stick_y, gamepad1.left_stick_x, autoAimPower);
         } else {
             mecanumDrive(-gamepad1.left_stick_y, gamepad1.left_stick_x, gamepad1.right_stick_x);
