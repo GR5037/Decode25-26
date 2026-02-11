@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode;
+package org.firstinspires.ftc.teamcode.KitBot;
 
 import static com.qualcomm.robotcore.hardware.DcMotor.ZeroPowerBehavior.BRAKE;
 
@@ -22,7 +22,7 @@ import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
-public class Robot {
+public class KitBotRobot {
     private DcMotorEx leftFrontDrive = null;
     private DcMotorEx rightFrontDrive = null;
     private DcMotorEx leftBackDrive = null;
@@ -30,8 +30,19 @@ public class Robot {
     private DcMotorEx kickstand = null;
     private Limelight3A limelight;
 
+    private final double FEED_TIME_SECONDS = 0.20;
+    private final double STOP_SPEED = 0.0;
+    private final double FULL_SPEED = 1.0;
+    private final double LAUNCHER_TARGET_VELOCITY = 485;
+    // 1125
+    private final double LAUNCHER_MIN_VELOCITY = 150;
+    // 1075
+    public DcMotorEx launcher = null;
+    private CRServo leftFeeder = null;
+    private CRServo rightFeeder = null;
+    ElapsedTime feederTimer = new ElapsedTime();
 
-    public static FollowerConstants followerConstants = new FollowerConstants() // All to change
+    public static FollowerConstants followerConstants = new FollowerConstants()
             .mass(9.52544)
             .forwardZeroPowerAcceleration(-31.515593658598892)
             .lateralZeroPowerAcceleration(-58.830920754537615)
@@ -43,7 +54,7 @@ public class Robot {
             ;
 
 
-    public static MecanumConstants driveConstants = new MecanumConstants() // All to change
+    public static MecanumConstants driveConstants = new MecanumConstants()
             .maxPower(1)
             .rightFrontMotorName("fr")
             .rightRearMotorName("br")
@@ -58,7 +69,7 @@ public class Robot {
 
 
 
-    public static PinpointConstants localizerConstants = new PinpointConstants() // All to change
+    public static PinpointConstants localizerConstants = new PinpointConstants()
             .forwardPodY(-2.5)
             .strafePodX(4.72440944882)
             .distanceUnit(DistanceUnit.INCH)
@@ -70,15 +81,22 @@ public class Robot {
     public static PathConstraints pathConstraints = new PathConstraints(0.99,
             100,
             1.4,
-            1); // All to change
+            1);
     public static Follower createFollower(HardwareMap hardwareMap) {
         return new FollowerBuilder(followerConstants, hardwareMap)
                 .pathConstraints(pathConstraints)
                 .mecanumDrivetrain(driveConstants)
                 .pinpointLocalizer(localizerConstants)
-                .build(); // All to change
+                .build();
     }
 
+    private enum LaunchState {
+        IDLE,
+        SPIN_UP,
+        LAUNCH,
+        LAUNCHING,
+    }
+    private LaunchState launchState;
 
 
     public void init(HardwareMap hardwareMap) {
@@ -89,21 +107,34 @@ public class Robot {
         limelight = hardwareMap.get(Limelight3A.class, "limelight");
 
 
-        leftFrontDrive.setDirection(DcMotorEx.Direction.REVERSE); // Change
-        rightFrontDrive.setDirection(DcMotorEx.Direction.FORWARD); // Change
-        leftBackDrive.setDirection(DcMotorEx.Direction.REVERSE); // Change
-        rightBackDrive.setDirection(DcMotorEx.Direction.FORWARD); // Change
+        leftFrontDrive.setDirection(DcMotorEx.Direction.REVERSE);
+        rightFrontDrive.setDirection(DcMotorEx.Direction.FORWARD);
+        leftBackDrive.setDirection(DcMotorEx.Direction.REVERSE);
+        rightBackDrive.setDirection(DcMotorEx.Direction.FORWARD);
 
         leftFrontDrive.setZeroPowerBehavior(BRAKE);
         rightFrontDrive.setZeroPowerBehavior(BRAKE);
         leftBackDrive.setZeroPowerBehavior(BRAKE);
         rightBackDrive.setZeroPowerBehavior(BRAKE);
 
+        launcher = hardwareMap.get(DcMotorEx.class, "launcher");
+        leftFeeder = hardwareMap.get(CRServo.class, "left_feeder");
+        rightFeeder = hardwareMap.get(CRServo.class, "right_feeder");
 
         kickstand = hardwareMap.get(DcMotorEx.class, "kickstand");
 
+        launcher.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        launcher.setZeroPowerBehavior(BRAKE);
+        launcher.setDirection(DcMotorSimple.Direction.REVERSE);
 
+        launcher.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(300, 0, 0, 10));
+            // 150, 6, 1, 0
+        // 300,0,0,10
+        leftFeeder.setDirection(DcMotorSimple.Direction.REVERSE);
 
+        launchState = LaunchState.IDLE;
+        stopFeeder();
+        stopLauncher();
 
     }
 
@@ -130,7 +161,92 @@ public class Robot {
         rightBackDrive.setPower(0);
     }
 
+    public void stopFeeder(){
+        leftFeeder.setPower(STOP_SPEED);
+        rightFeeder.setPower(STOP_SPEED);
+    }
 
+    public void startSlowFeeder() {
+        leftFeeder.setPower(0.15);
+        rightFeeder.setPower(0.15);
+    }
+    public void startFeeder(){
+        leftFeeder.setPower(0.9);
+        rightFeeder.setPower(0.9);
+    }
+
+    public void updateState(){
+        switch (launchState) {
+            case IDLE:
+//                if (shotRequested) {
+//                    launchState = LaunchState.SPIN_UP;
+//                }
+                break;
+            case SPIN_UP:
+                launcher.setVelocity(LAUNCHER_TARGET_VELOCITY);
+                if (launcher.getVelocity() > LAUNCHER_MIN_VELOCITY) {
+                    launchState = LaunchState.LAUNCH;
+                }
+                break;
+            case LAUNCH:
+                leftFeeder.setPower(FULL_SPEED);
+                rightFeeder.setPower(FULL_SPEED);
+                feederTimer.reset();
+                launchState = LaunchState.LAUNCHING;
+                break;
+            case LAUNCHING:
+                if (feederTimer.seconds() > FEED_TIME_SECONDS) {
+                    launchState = LaunchState.IDLE;
+                    leftFeeder.setPower(STOP_SPEED);
+                    rightFeeder.setPower(STOP_SPEED);
+                }
+                break;
+        }
+    }
+    public void startLauncher(){
+        if (launchState == LaunchState.IDLE){
+            launchState = LaunchState.SPIN_UP;
+        }
+    }
+
+    public void shootArtifact() {
+        startFeeder();
+        launcherStart(1500);
+        stopFeeder();
+        SystemClock.sleep(2000);
+        launcherStop();
+    }
+    public void stopLauncher(){
+        stopFeeder();
+        launcher.setVelocity(STOP_SPEED);
+        launchState = LaunchState.IDLE;
+    }
+
+    public void launcherStart(double power){
+        launcher.setVelocity(power);
+    }
+
+    public void launcherStop(){
+        launcher.setVelocity(STOP_SPEED);
+    }
+
+    public void feederStart(){
+        leftFeeder.setPower(FULL_SPEED);
+        rightFeeder.setPower(FULL_SPEED);
+    }
+
+    public void feederStop(){
+        leftFeeder.setPower(STOP_SPEED);
+        rightFeeder.setPower(STOP_SPEED);
+    }
+
+    public String getState(){
+        return launchState.toString();
+    }
+
+    public double getVelocity(){
+        return launcher.getVelocity();
+    }
 }
 
 

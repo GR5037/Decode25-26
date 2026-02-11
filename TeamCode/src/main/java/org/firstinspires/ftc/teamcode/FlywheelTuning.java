@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode;
 
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.CRServo;
@@ -9,18 +10,19 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 
 @TeleOp
+//@Disabled
 public class FlywheelTuning extends OpMode {
 
     public DcMotorEx flywheelMotor;
 
-    public double highVelocity = 1800;
-    public double lowVelocity = 900;
+    public double highVelocity = 1700; //2200 far
+    public double lowVelocity = 1620;
     double curTargetVelocity = highVelocity;
 
-    double F = 11.7362;
-    double P = 0;
+    double F = 13.1; //33.1 far
+    double P = 200; //1000 far
 
-    double[] stepSizes = {10.0, 1.0, 0.1, 0.001, 0.0001};
+    double[] stepSizes = {100.0, 10.0, 1.0, 0.1, 0.001, 0.0001};
 
     int stepIndex = 1;
 
@@ -34,18 +36,18 @@ public class FlywheelTuning extends OpMode {
     @Override
     public void init() {
         flywheelMotor = hardwareMap.get(DcMotorEx.class, "launcher");
-        leftFeeder = hardwareMap.get(CRServo.class, "left_feeder");
-        rightFeeder = hardwareMap.get(CRServo.class, "right_feeder");
+//        leftFeeder = hardwareMap.get(CRServo.class, "left_feeder");
+//        rightFeeder = hardwareMap.get(CRServo.class, "right_feeder");
         flywheelMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         flywheelMotor.setDirection(DcMotorSimple.Direction.FORWARD);
 
         PIDFCoefficients pidfCoefficients = new PIDFCoefficients(P, 0, 0, F);
         flywheelMotor.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, pidfCoefficients);
         telemetry.addLine("Init complete");
-        leftFeeder.setPower(0.0);
-        rightFeeder.setPower(0.0);
-        leftFeeder.setDirection(DcMotorSimple.Direction.REVERSE);
-        flywheelMotor.setDirection(DcMotorSimple.Direction.REVERSE);
+//        leftFeeder.setPower(0.0);
+//        rightFeeder.setPower(0.0);
+//        leftFeeder.setDirection(DcMotorSimple.Direction.REVERSE);
+        flywheelMotor.setDirection(DcMotorSimple.Direction.FORWARD);
 
 
 
@@ -53,15 +55,15 @@ public class FlywheelTuning extends OpMode {
 
     @Override
     public void loop() {
-
-        if (gamepad1.aWasPressed()) {
-            leftFeeder.setPower(0.9);
-            rightFeeder.setPower(0.9);
-        }
-        if (gamepad1.xWasPressed()) {
-            leftFeeder.setPower(0.0);
-            rightFeeder.setPower(0.0);
-        }
+//
+//        if (gamepad1.aWasPressed()) {
+//            leftFeeder.setPower(0.9);
+//            rightFeeder.setPower(0.9);
+//        }
+//        if (gamepad1.xWasPressed()) {
+//            leftFeeder.setPower(0.0);
+//            rightFeeder.setPower(0.0);
+//        }
 
         if (gamepad1.yWasPressed()) {
             if (curTargetVelocity == highVelocity) {

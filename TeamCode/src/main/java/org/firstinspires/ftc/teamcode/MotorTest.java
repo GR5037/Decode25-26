@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode;
 
 import static com.qualcomm.robotcore.hardware.DcMotor.ZeroPowerBehavior.BRAKE;
 
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -10,7 +11,8 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 
 
-@TeleOp(name="WithController", group="Robot")
+@TeleOp(name="MotorTest", group="Robot")
+//@Disabled
 public class MotorTest extends LinearOpMode {
     private DcMotorEx motor;
     private DcMotor leftFrontDrive = null;
@@ -24,35 +26,39 @@ public class MotorTest extends LinearOpMode {
 
 
     // These variables can be tuned from the FTC Dashboard
-    public static double P = 10.0;
-    public static double I = 6.0;
-    public static double D = 1.0;
-    public static double F = 0.0;
+    public static double P = 200.0;  //10 //1000 far
+    public static double I = 0.0;   //6
+    public static double D = 0.0;    //1
+    public static double F = 13.1;   //0 //33.1 far
+
+    public String status;
 
     double targetVelocity = 0;
     boolean dpadUpPressed = false;
     boolean dpadDownPressed = false;
 
 
-
-
     @Override
     public void runOpMode() {
 
-        leftFrontDrive = hardwareMap.get(DcMotor.class, "fl");
-        rightFrontDrive = hardwareMap.get(DcMotor.class, "fr");
-        leftBackDrive = hardwareMap.get(DcMotor.class, "bl");
-        rightBackDrive = hardwareMap.get(DcMotor.class, "br");
-        leftFrontDrive.setDirection(DcMotor.Direction.REVERSE);
-        rightFrontDrive.setDirection(DcMotor.Direction.FORWARD);
-        leftBackDrive.setDirection(DcMotor.Direction.REVERSE);
-        rightBackDrive.setDirection(DcMotor.Direction.FORWARD);
-        leftFrontDrive.setZeroPowerBehavior(BRAKE);
-        rightFrontDrive.setZeroPowerBehavior(BRAKE);
-        leftBackDrive.setZeroPowerBehavior(BRAKE);
-        rightBackDrive.setZeroPowerBehavior(BRAKE);
+//        leftFrontDrive = hardwareMap.get(DcMotor.class, "fl");
+//        rightFrontDrive = hardwareMap.get(DcMotor.class, "fr");
+//        leftBackDrive = hardwareMap.get(DcMotor.class, "bl");
+//        rightBackDrive = hardwareMap.get(DcMotor.class, "br");
+//        // Drive practice robot:
+//        leftFrontDrive.setDirection(DcMotor.Direction.REVERSE);
+//        leftBackDrive.setDirection(DcMotor.Direction.REVERSE);
+//
+//        // Regular robot:
+////        leftFrontDrive.setDirection(DcMotor.Direction.REVERSE);
+////        rightFrontDrive.setDirection(DcMotor.Direction.FORWARD);
+//        leftBackDrive.setDirection(DcMotor.Direction.REVERSE);
+//        rightBackDrive.setDirection(DcMotor.Direction.FORWARD);
+//        leftFrontDrive.setZeroPowerBehavior(BRAKE);
+//        rightFrontDrive.setZeroPowerBehavior(BRAKE);
+//        leftBackDrive.setZeroPowerBehavior(BRAKE);
+//        rightBackDrive.setZeroPowerBehavior(BRAKE);
 
-        mecanumDrive(-gamepad1.left_stick_y, gamepad1.left_stick_x, -gamepad1.right_stick_x);
 
 
         // Get the motor from the hardware map
@@ -60,12 +66,14 @@ public class MotorTest extends LinearOpMode {
 
         // Set the motor run mode to use encoders for velocity control
         motor.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
-        motor.setDirection(DcMotorEx.Direction.REVERSE);
+        motor.setDirection(DcMotorEx.Direction.FORWARD);
 
         // Wait for the game to start
         waitForStart();
 
         while (opModeIsActive()) {
+//            mecanumDrive(-gamepad1.left_stick_y, gamepad1.left_stick_x, gamepad1.right_stick_x);
+
             // Apply the PIDF coefficients from the dashboard
             PIDFCoefficients newPIDF = new PIDFCoefficients(P, I, D, F);
             motor.setVelocityPIDFCoefficients(newPIDF.p, newPIDF.i, newPIDF.d, newPIDF.f);
@@ -94,30 +102,30 @@ public class MotorTest extends LinearOpMode {
 
 
 
-//            if (1960 <= motor_vel && motor_vel <= 2040) {
-//                status = "Normal";
-//            } else {
-//                status = "Disrupted";
-//                double disruptedTime = getRuntime();
-//                telemetry.addData("Time of disruption", disruptedTime);
-//            }
+            if (1960 <= motor_vel && motor_vel <= 2040) {
+                status = "Normal";
+            } else {
+                status = "Disrupted";
+                double disruptedTime = getRuntime();
+                telemetry.addData("Time of disruption", disruptedTime);
+            }
 
-//            double power = 0;
-//
-//            if (gamepad1.dpad_up) {
-//                power += 0.1;
-//            }
-//            if (gamepad1.dpad_down) {
-//                power -= 0.1;
-//            }
-//
-//            motor.setPower(power);
-//
-//            // Display telemetry for monitoring
-//            telemetry.addData("Power", power);
-////            telemetry.addData("Target Velocity", TARGET_VELOCITY);
-////            telemetry.addData("Status", status);
-//            telemetry.update();
+            double power = 0;
+
+            if (gamepad1.dpad_up) {
+                power += 0.1;
+            }
+            if (gamepad1.dpad_down) {
+                power -= 0.1;
+            }
+
+            motor.setPower(power);
+
+            // Display telemetry for monitoring
+            telemetry.addData("Power", power);
+//            telemetry.addData("Target Velocity", TARGET_VELOCITY);
+//            telemetry.addData("Status", status);
+            telemetry.update();
         }
     }
     void mecanumDrive(double forward, double strafe, double rotate){

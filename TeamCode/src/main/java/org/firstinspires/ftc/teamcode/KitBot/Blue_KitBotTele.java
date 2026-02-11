@@ -30,11 +30,12 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.firstinspires.ftc.teamcode;
+package org.firstinspires.ftc.teamcode.KitBot;
 
 import static com.qualcomm.robotcore.hardware.DcMotor.ZeroPowerBehavior.BRAKE;
 
 import com.qualcomm.hardware.limelightvision.Limelight3A;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.CRServo;
@@ -61,9 +62,9 @@ import com.qualcomm.hardware.limelightvision.LLResult;
  * we will also need to adjust the "PIDF" coefficients with some that are a better fit for our application.
  */
 
-@TeleOp(name = "Red_KitBotTele", group = "StarterBot")
-//@Disabled
-public class Red_KitBotTele extends OpMode {
+@TeleOp(name = "Blue_KitBotTele", group = "StarterBot")
+@Disabled
+public class Blue_KitBotTele extends OpMode {
     final double FEED_TIME_SECONDS = 0.09; //The feeder servos run this long when a shot is requested. 0.075
     final double DOWN_TIME_SECONDS = 0.9;
     final double STOP_SPEED = 0.0; //We send this power to the servos when we want them to stop.
@@ -86,6 +87,7 @@ public class Red_KitBotTele extends OpMode {
     private DcMotor leftBackDrive = null;
     private DcMotor rightBackDrive = null;
     private DcMotorEx launcher = null;
+    private DcMotorEx kickstand = null;
     private CRServo leftFeeder = null;
     private CRServo rightFeeder = null;
     private Limelight3A limelight;
@@ -153,6 +155,7 @@ public class Red_KitBotTele extends OpMode {
         rightFeeder = hardwareMap.get(CRServo.class, "right_feeder");
         limelight = hardwareMap.get(Limelight3A.class, "limelight");
 
+        kickstand = hardwareMap.get(DcMotorEx.class, "kickstand");
 
         /*
          * To drive forward, most robots need the motor on one side to be reversed,
@@ -188,6 +191,7 @@ public class Red_KitBotTele extends OpMode {
         leftBackDrive.setZeroPowerBehavior(BRAKE);
         rightBackDrive.setZeroPowerBehavior(BRAKE);
         launcher.setZeroPowerBehavior(BRAKE);
+        kickstand.setZeroPowerBehavior(BRAKE);
 
         /*
          * set Feeders to an initial value to initialize the servo controller
@@ -204,7 +208,7 @@ public class Red_KitBotTele extends OpMode {
         leftFeeder.setDirection(DcMotorSimple.Direction.REVERSE);
 
 
-        limelight.pipelineSwitch(3);
+        limelight.pipelineSwitch(2);
 
         resetRuntime();
 
@@ -259,6 +263,14 @@ public class Red_KitBotTele extends OpMode {
             mecanumDrive(-gamepad1.left_stick_y, gamepad1.left_stick_x, gamepad1.right_stick_x);
         }
 
+        if (gamepad1.dpad_down) {
+            kickstand.setPower(1);
+        } else if (gamepad1.dpad_up) {
+            kickstand.setPower(-1);
+        } else {
+            kickstand.setPower(0.0);
+        }
+
 
 
 
@@ -278,31 +290,24 @@ public class Red_KitBotTele extends OpMode {
                 break;
 
             case 1:
+                if (limelight.getLatestResult().getTy() < -3.7) {
+                    LAUNCHER_TARGET_VELOCITY = 2250;
+                }
+
                 if (llResult.isValid()) {
                     // Quadratic
 
-                    double part1 = 3.81382 * Math.pow(limelight.getLatestResult().getTy(), 2);
-                    double part2 = 85.49898 * limelight.getLatestResult().getTy();
-                    double intercept = 1889.39053;
+                    double part1 = 4.92626 * Math.pow(limelight.getLatestResult().getTy(), 2);
+                    double part2 = 95.16643 * limelight.getLatestResult().getTy();
+                    double intercept = 1818.37259;
 
                     LAUNCHER_TARGET_VELOCITY = part1 - part2 + intercept;
-
-                    // Linear
-//                    double part1 = -44.00298 * limelight.getLatestResult().getTy();
-//                    double intercept = 1949.76907;
-//
-//                    LAUNCHER_TARGET_VELOCITY = part1 + intercept;
-
-                    // Exponential
-//                    double part1 = Math.pow(0.972946, limelight.getLatestResult().getTy());
-//                    double intercept = 1944.66114;
-//
-//                    LAUNCHER_TARGET_VELOCITY = part1 * intercept;
 
                     LAUNCHER_MIN_VELOCITY = LAUNCHER_TARGET_VELOCITY - 80;
 
                     launcher.setVelocity(LAUNCHER_TARGET_VELOCITY);
                 }
+
                 if (gamepad1.bWasPressed()) {
                     velocityState = 0;
                 }
