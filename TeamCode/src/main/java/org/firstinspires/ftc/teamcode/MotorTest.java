@@ -12,7 +12,7 @@ import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 
 
 @TeleOp(name="MotorTest", group="Robot")
-//@Disabled
+@Disabled
 public class MotorTest extends LinearOpMode {
     private DcMotorEx motor;
     private DcMotor leftFrontDrive = null;

@@ -10,7 +10,7 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 
 @TeleOp
-//@Disabled
+@Disabled
 public class FlywheelTuning extends OpMode {
 
     public DcMotorEx flywheelMotor;
@@ -54,6 +54,7 @@ public class FlywheelTuning extends OpMode {
     }
 
     @Override
+
     public void loop() {
 //
 //        if (gamepad1.aWasPressed()) {

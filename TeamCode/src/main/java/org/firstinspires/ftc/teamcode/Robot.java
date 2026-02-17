@@ -1,8 +1,14 @@
 package org.firstinspires.ftc.teamcode;
 
+import com.bylazar.configurables.annotations.Configurable;
+import com.pedropathing.geometry.Pose;
+import com.qualcomm.robotcore.hardware.AnalogInput;
+
 import static com.qualcomm.robotcore.hardware.DcMotor.ZeroPowerBehavior.BRAKE;
 
 import android.os.SystemClock;
+
+import androidx.core.math.MathUtils;
 
 import com.pedropathing.control.FilteredPIDFCoefficients;
 import com.pedropathing.follower.Follower;
@@ -13,34 +19,104 @@ import com.pedropathing.ftc.localization.constants.PinpointConstants;
 import com.pedropathing.paths.PathConstraints;
 import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
+import com.qualcomm.robotcore.hardware.AnalogInput;
 import com.qualcomm.robotcore.hardware.CRServo;
+import com.qualcomm.robotcore.hardware.ColorRangeSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.DigitalChannel;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
+import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
+import org.firstinspires.ftc.teamcode.ABSEncoder;
+
 
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
-public class Robot {
-    private DcMotorEx leftFrontDrive = null;
-    private DcMotorEx rightFrontDrive = null;
-    private DcMotorEx leftBackDrive = null;
-    private DcMotorEx rightBackDrive = null;
-    private DcMotorEx kickstand = null;
-    private Limelight3A limelight;
+import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 
+@Configurable
+public class Robot {
+
+    static double flyP = 200;
+    static double flyI = 0;
+    static double flyD = 0;
+    static double flyF = 13.1;
+    static double lkRaised = 0.0;
+    static double lkLowered = 0.8;
+    static double rkRaised = 1.0;
+    static double rkLowered = 0.2;
+    static double transferRest = 0.489;
+    static double transfer1 = 0.414;
+    static double transfer2 = 0.342;
+    static double transfer3 = 0.269;
+    static int transferOneTime = 270;
+    static int spindexPose;
+    static int numberOfSpins = 0;
+    static int numberOfBalls = 0;
+    static int ejectSwitch = 0;
+    static int kickstandSwitch = 0;
+    static int launchOneSwitch = 0;
+    static int launchAllSwitch = 0;
+    static int gateSwitch = 0;
+    static boolean flywheelOn = false;
+    static double xTurretPose;
+    static double yTurretPose;
+    static double turretDistanceToGoal;
+    static int xBlueGoal = 11;
+    static int xRedGoal = 133;
+    static int yGoal = 136;
+    static double velocityA = -0.011707;
+    static double velocityB = 8.7054;
+    static double velocityC = 1341.44834;
+    static double velocity1;
+    static double velocity2;
+    static int velocityMax = 2400;
+    static int velocityMin = 1500;
+    static int flywheelVelocity;
+    static double angleA = 0.0000180208;
+    static double angleB = -0.00838942;
+    static double angleC = 0.928578;
+    static double angle1;
+    static double angle2;
+    static double hoodMax = 0.0;
+    static double hoodMin = 0.73;
+    static double hoodAngle;
+
+
+
+//    private static Follower follower;
+//    static double dxr = 132 - follower.getPose().getX();
+//    static double dyr = 137 - follower.getPose().getY();
+//    static double targetRed = Math.hypot(dxr,dyr);
+//    static double part1Red = 4.92626 * Math.pow(targetRed, 2);
+//    static double part2Red = 95.16643 * targetRed;
+//    static double interceptRed = 1818.37259;
+//    static double LAUNCHER_TARGET_VELOCITY_RED = part1Red - part2Red + interceptRed;
+//    static double LAUNCHER_MIN_VELOCITY_RED = LAUNCHER_TARGET_VELOCITY_RED - 80;
+//    static double dxb = 12 - follower.getPose().getX();
+//    static double dyb = 137 - follower.getPose().getY();
+//    static double targetBlue = Math.hypot(dxb,dyb);
+//    static double part1Blue = 4.92626 * Math.pow(targetBlue, 2);
+//    static double part2Blue = 95.16643 * targetBlue;
+//    static double interceptBlue = 1818.37259;
+//    static double LAUNCHER_TARGET_VELOCITY_BLUE = part1Blue - part2Blue + interceptBlue;
+//    static double LAUNCHER_MIN_VELOCITY_BLUE = LAUNCHER_TARGET_VELOCITY_BLUE - 80;
+
+
+//    private Limelight3A limelight;
+
+    public static String data = "Default data";
 
     public static FollowerConstants followerConstants = new FollowerConstants() // All to change
             .mass(9.52544)
             .forwardZeroPowerAcceleration(-31.515593658598892)
             .lateralZeroPowerAcceleration(-58.830920754537615)
             .translationalPIDFCoefficients(new com.pedropathing.control.PIDFCoefficients(0.044, 0, 0.0, 0.023))
-            .headingPIDFCoefficients(new com.pedropathing.control.PIDFCoefficients(0.46,0,0.002,0.023))
-            .drivePIDFCoefficients(new FilteredPIDFCoefficients(0.04,0,0.0001,0.6,0.023))
-            .centripetalScaling(0.0005)
-
-            ;
+            .headingPIDFCoefficients(new com.pedropathing.control.PIDFCoefficients(0.46, 0, 0.002, 0.023))
+            .drivePIDFCoefficients(new FilteredPIDFCoefficients(0.04, 0, 0.0001, 0.6, 0.023))
+            .centripetalScaling(0.0005);
 
 
     public static MecanumConstants driveConstants = new MecanumConstants() // All to change
@@ -57,10 +133,9 @@ public class Robot {
             .yVelocity(54.264240895669296);
 
 
-
     public static PinpointConstants localizerConstants = new PinpointConstants() // All to change
-            .forwardPodY(-2.5)
-            .strafePodX(4.72440944882)
+            .forwardPodY(7.779)
+            .strafePodX(8.0)
             .distanceUnit(DistanceUnit.INCH)
             .hardwareMapName("pinpoint")
             .encoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD)
@@ -71,6 +146,8 @@ public class Robot {
             100,
             1.4,
             1); // All to change
+
+
     public static Follower createFollower(HardwareMap hardwareMap) {
         return new FollowerBuilder(followerConstants, hardwareMap)
                 .pathConstraints(pathConstraints)
@@ -79,61 +156,13 @@ public class Robot {
                 .build(); // All to change
     }
 
+    public static void init(HardwareMap hardwareMap) {
 
 
-    public void init(HardwareMap hardwareMap) {
-        leftFrontDrive = hardwareMap.get(DcMotorEx.class, "fl");
-        rightFrontDrive = hardwareMap.get(DcMotorEx.class, "fr");
-        leftBackDrive = hardwareMap.get(DcMotorEx.class, "bl");
-        rightBackDrive = hardwareMap.get(DcMotorEx.class, "br");
-        limelight = hardwareMap.get(Limelight3A.class, "limelight");
-
-
-        leftFrontDrive.setDirection(DcMotorEx.Direction.REVERSE); // Change
-        rightFrontDrive.setDirection(DcMotorEx.Direction.FORWARD); // Change
-        leftBackDrive.setDirection(DcMotorEx.Direction.REVERSE); // Change
-        rightBackDrive.setDirection(DcMotorEx.Direction.FORWARD); // Change
-
-        leftFrontDrive.setZeroPowerBehavior(BRAKE);
-        rightFrontDrive.setZeroPowerBehavior(BRAKE);
-        leftBackDrive.setZeroPowerBehavior(BRAKE);
-        rightBackDrive.setZeroPowerBehavior(BRAKE);
-
-
-        kickstand = hardwareMap.get(DcMotorEx.class, "kickstand");
-
-
-
-
+//        follower = Constants.createFollower(hardwareMap);
+//        follower.update();
     }
-
-    public void drive(double forward, double strafe, double rotate){
-
-        double denominator = Math.max(Math.abs(forward) + Math.abs(strafe) + Math.abs(rotate), 1);
-
-        double leftFrontPower = (forward + strafe + rotate) / denominator;
-        double rightFrontPower = (forward - strafe - rotate) / denominator;
-        double leftBackPower = (forward - strafe + rotate) / denominator;
-        double rightBackPower = (forward + strafe - rotate) / denominator;
-
-        leftFrontDrive.setPower(leftFrontPower);
-        rightFrontDrive.setPower(rightFrontPower);
-        leftBackDrive.setPower(leftBackPower);
-        rightBackDrive.setPower(rightBackPower);
-
-    }
-
-    public void killMotors() {
-        leftFrontDrive.setPower(0);
-        leftBackDrive.setPower(0);
-        rightFrontDrive.setPower(0);
-        rightBackDrive.setPower(0);
-    }
-
-
 }
-
-
 
 
 
