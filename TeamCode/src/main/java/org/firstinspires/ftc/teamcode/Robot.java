@@ -27,9 +27,12 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.DigitalChannel;
 import com.qualcomm.robotcore.hardware.HardwareMap;
+import com.qualcomm.robotcore.hardware.NormalizedRGBA;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
+
+import org.firstinspires.ftc.robotcore.external.JavaUtil;
 import org.firstinspires.ftc.teamcode.ABSEncoder;
 
 
@@ -43,6 +46,10 @@ public class Robot {
     static double flyI = 0;
     static double flyD = 0;
     static double flyF = 13.1;
+    static double dexP = 0.7;
+    static double dexI = 0.01;
+    static double dexD = 0.00001;
+    static double dexF = 6;
     static double lkRaised = 0.0;
     static double lkLowered = 0.8;
     static double rkRaised = 1.0;
@@ -84,25 +91,6 @@ public class Robot {
     static double hoodMin = 0.73;
     static double hoodAngle;
 
-
-
-//    private static Follower follower;
-//    static double dxr = 132 - follower.getPose().getX();
-//    static double dyr = 137 - follower.getPose().getY();
-//    static double targetRed = Math.hypot(dxr,dyr);
-//    static double part1Red = 4.92626 * Math.pow(targetRed, 2);
-//    static double part2Red = 95.16643 * targetRed;
-//    static double interceptRed = 1818.37259;
-//    static double LAUNCHER_TARGET_VELOCITY_RED = part1Red - part2Red + interceptRed;
-//    static double LAUNCHER_MIN_VELOCITY_RED = LAUNCHER_TARGET_VELOCITY_RED - 80;
-//    static double dxb = 12 - follower.getPose().getX();
-//    static double dyb = 137 - follower.getPose().getY();
-//    static double targetBlue = Math.hypot(dxb,dyb);
-//    static double part1Blue = 4.92626 * Math.pow(targetBlue, 2);
-//    static double part2Blue = 95.16643 * targetBlue;
-//    static double interceptBlue = 1818.37259;
-//    static double LAUNCHER_TARGET_VELOCITY_BLUE = part1Blue - part2Blue + interceptBlue;
-//    static double LAUNCHER_MIN_VELOCITY_BLUE = LAUNCHER_TARGET_VELOCITY_BLUE - 80;
 
 
 //    private Limelight3A limelight;

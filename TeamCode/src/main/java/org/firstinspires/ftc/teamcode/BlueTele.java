@@ -13,6 +13,7 @@ import static org.firstinspires.ftc.teamcode.Robot.velocityA;
 import static org.firstinspires.ftc.teamcode.Robot.velocityB;
 import static org.firstinspires.ftc.teamcode.Robot.velocityC;
 
+import com.bylazar.panels.Panels;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.Pose;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
@@ -24,11 +25,17 @@ import com.qualcomm.robotcore.hardware.ColorRangeSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DigitalChannel;
+import com.qualcomm.robotcore.hardware.NormalizedRGBA;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
+import org.firstinspires.ftc.robotcore.external.JavaUtil;
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
+
+import java.util.ArrayList;
+import java.util.List;
 
 
 //@Configurable
@@ -63,6 +70,31 @@ public class BlueTele extends OpMode {
     private Follower follower;
     private TelemetryManager telemetryM;
     ElapsedTime runtime = new ElapsedTime();
+    NormalizedRGBA colors1 = LTcolor.getNormalizedColors();
+    NormalizedRGBA colors2 = LBcolor.getNormalizedColors();
+    NormalizedRGBA colors3 = BTcolor.getNormalizedColors();
+    NormalizedRGBA colors4 = BBcolor.getNormalizedColors();
+    NormalizedRGBA colors5 = RTcolor.getNormalizedColors();
+    NormalizedRGBA colors6 = RBcolor.getNormalizedColors();
+    float hue1 = JavaUtil.colorToHue(colors1.toColor());
+    float hue2 = JavaUtil.colorToHue(colors2.toColor());
+    float hue3 = JavaUtil.colorToHue(colors3.toColor());
+    float hue4 = JavaUtil.colorToHue(colors4.toColor());
+    float hue5 = JavaUtil.colorToHue(colors5.toColor());
+    float hue6 = JavaUtil.colorToHue(colors6.toColor());
+
+    public enum spindexPosition {
+        LEFT,
+        BACK,
+        RIGHT
+    }
+    public enum spindexColor {
+        PURPLE,
+        GREEN,
+        NONE
+    }
+
+    List<String> queue = new ArrayList<>();
 
     @Override
     public void init() {
@@ -70,7 +102,6 @@ public class BlueTele extends OpMode {
         follower = Constants.createFollower(hardwareMap);
         follower.update();
         telemetryM = PanelsTelemetry.INSTANCE.getTelemetry();
-
 
         leftFrontDrive = hardwareMap.get(DcMotor.class, "fl");
         rightFrontDrive = hardwareMap.get(DcMotor.class, "fr");
@@ -82,10 +113,10 @@ public class BlueTele extends OpMode {
         leftBackDrive.setDirection(DcMotor.Direction.REVERSE); // Change
         rightBackDrive.setDirection(DcMotor.Direction.FORWARD); // Change
 
-        leftFrontDrive.setZeroPowerBehavior(FLOAT);
-        rightFrontDrive.setZeroPowerBehavior(FLOAT);
-        leftBackDrive.setZeroPowerBehavior(FLOAT);
-        rightBackDrive.setZeroPowerBehavior(FLOAT);
+        leftFrontDrive.setZeroPowerBehavior(BRAKE);
+        rightFrontDrive.setZeroPowerBehavior(BRAKE);
+        leftBackDrive.setZeroPowerBehavior(BRAKE);
+        rightBackDrive.setZeroPowerBehavior(BRAKE);
 
         transfer = hardwareMap.get(Servo.class, "transfer");
         leftKickstand = hardwareMap.get(Servo.class, "Lstand");
@@ -109,13 +140,13 @@ public class BlueTele extends OpMode {
         intake.setDirection(DcMotorEx.Direction.REVERSE); // Change
         turret.setDirection(DcMotorEx.Direction.FORWARD); // Change
 
-        spindex.setZeroPowerBehavior(BRAKE);
+        spindex.setZeroPowerBehavior(FLOAT);
         flywheel.setZeroPowerBehavior(FLOAT);
         intake.setZeroPowerBehavior(BRAKE);
         turret.setZeroPowerBehavior(BRAKE);
 
         PIDFCoefficients flywheelpidfCoefficients = new PIDFCoefficients(Robot.flyP, Robot.flyI, Robot.flyD, Robot.flyF);
-        PIDFCoefficients spindexpidfCoefficients = new PIDFCoefficients(1, 0.3, 0, 2);
+        PIDFCoefficients spindexpidfCoefficients = new PIDFCoefficients(Robot.dexP, Robot.dexI, Robot.dexD, Robot.dexF);
 
         flywheel.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, flywheelpidfCoefficients);
         spindex.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
@@ -126,6 +157,7 @@ public class BlueTele extends OpMode {
         gate.setMode(DigitalChannel.Mode.INPUT);
         ABSturret = hardwareMap.get(AnalogInput.class, "ABSturret");
         ABSspindex = hardwareMap.get(AnalogInput.class, "ABSspindex");
+
     }
 
     @Override
@@ -135,6 +167,7 @@ public class BlueTele extends OpMode {
         rightKickstand.setPosition(Robot.rkRaised);
         leftKickstand.setPosition(Robot.lkRaised);
         transfer.setPosition(Robot.transferRest);
+        Robot.spindexPose = 0;
 
         follower.startTeleopDrive();
     }
@@ -179,6 +212,8 @@ public class BlueTele extends OpMode {
 //            flywheel.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, flywheelpidfCoefficients);
         } else if (gamepad2.right_bumper) {
             Robot.flywheelOn = false;
+            PIDFCoefficients spindexpidfCoefficients = new PIDFCoefficients(Robot.dexP, Robot.dexI, Robot.dexD, Robot.dexF);
+            spindex.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, spindexpidfCoefficients);
         }
         if (Robot.flywheelOn) {
             flywheel.setVelocity(Robot.flywheelVelocity);
@@ -188,6 +223,7 @@ public class BlueTele extends OpMode {
 
         //Drive
         drive(gamepad1.left_stick_y, gamepad1.left_stick_x, gamepad1.right_stick_x);
+        drive(gamepad2.left_stick_y, gamepad2.left_stick_x, gamepad2.right_stick_x);
 
 
         //Intake
@@ -313,10 +349,9 @@ public class BlueTele extends OpMode {
                 if (runtime.milliseconds() > 900) {
                     Robot.launchAllSwitch = 0;
                 }
+                queue.clear();
             break;
         }
-
-
 
         //Eject current ball (not done)
         switch (Robot.ejectSwitch) {
@@ -356,13 +391,23 @@ public class BlueTele extends OpMode {
             break;
         }
 
+        if (gamepad2.xWasPressed()){
+            queuePurple();
+        }
 
+        if (gamepad2.yWasPressed()) {
+            queueGreen();
+        }
 
         //Telemetry
         telemetry.addData("# of balls", Robot.numberOfBalls);
-        telemetry.addData("hood andge", Robot.hoodAngle);
+        telemetry.addData("hood angle", Robot.hoodAngle);
         telemetry.addData("velocity", flywheelVelocity);
+        telemetry.addData("distance", RBcolor.getDistance(DistanceUnit.CM));
 
+
+        telemetryM.debug(flywheel.getVelocity());
+        telemetryM.update();
 
         telemetry.update();
 
@@ -430,6 +475,82 @@ public class BlueTele extends OpMode {
         spindex.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         spindex.setPower(1.0);
     }
+    public void backStatus() {
+        if ((BBcolor.getDistance(DistanceUnit.CM) < 5) || (BTcolor.getDistance(DistanceUnit.CM) < 5)) {
+            if ((hue3 >= 90 && hue3 <= 150) || (hue4 >= 90 && hue4 <= 150)) {
+                // Green
+            } else {
+                // Purple
+            }
+        }
+    }
+
+    public void leftStatus() {
+        if ((LBcolor.getDistance(DistanceUnit.CM) < 5) || (LTcolor.getDistance(DistanceUnit.CM) < 5)) {
+            if ((hue1 >= 90 && hue1 <= 150) || (hue2 >= 90 && hue2 <= 150)) {
+                // Green
+            } else {
+                // Purple
+            }
+        }
+    }
+
+    public void rightStatus() {
+        if ((RBcolor.getDistance(DistanceUnit.CM) < 5) || (RTcolor.getDistance(DistanceUnit.CM) < 5)) {
+            if ((hue5 >= 90 && hue5 <= 150) || (hue6 >= 90 && hue6 <= 150)) {
+                // Green
+            } else {
+                // Purple
+            }
+        }
+    }
+
+    public void queueGreen() {
+        queue.add("green");
+        if ((RBcolor.getDistance(DistanceUnit.CM) < 5) || (RTcolor.getDistance(DistanceUnit.CM) < 5)) {
+            if ((hue5 >= 90 && hue5 <= 150) || (hue6 >= 90 && hue6 <= 150)) {
+                telemetry.addLine("Green in Right");
+                telemetry.addData("Queue", queue);
+            }
+        } else if ((LBcolor.getDistance(DistanceUnit.CM) < 5) || (LTcolor.getDistance(DistanceUnit.CM) < 5)) {
+            if ((hue5 >= 90 && hue5 <= 150) || (hue6 >= 90 && hue6 <= 150)) {
+                spin1CCW();
+                telemetry.addLine("Green in Left");
+                telemetry.addData("Queue", queue);
+            }
+        } else if ((BBcolor.getDistance(DistanceUnit.CM) < 5) || (BTcolor.getDistance(DistanceUnit.CM) < 5)) {
+            if ((hue5 >= 90 && hue5 <= 150) || (hue6 >= 90 && hue6 <= 150)) {
+                spin1CW();
+                telemetry.addLine("Green in Back");
+                telemetry.addData("Queue", queue);
+            }
+        }
+        telemetry.update();
+    }
+
+    public void queuePurple() {
+        queue.add("purple");
+        if ((RBcolor.getDistance(DistanceUnit.CM) < 5) || (RTcolor.getDistance(DistanceUnit.CM) < 5)) {
+            if ((hue5 >= 165 && hue5 <= 240) || (hue6 >= 165 && hue6 <= 240)) {
+                telemetry.addLine("Purple in Right");
+                telemetry.addData("Queue", queue);
+            }
+        } else if ((LBcolor.getDistance(DistanceUnit.CM) < 5) || (LTcolor.getDistance(DistanceUnit.CM) < 5)) {
+            if ((hue5 >= 165 && hue5 <= 240) || (hue6 >= 165 && hue6 <= 240)) {
+                spin1CCW();
+                telemetry.addLine("Purple in Left");
+                telemetry.addData("Queue", queue);
+            }
+        } else if ((BBcolor.getDistance(DistanceUnit.CM) < 5) || (BTcolor.getDistance(DistanceUnit.CM) < 5)) {
+            if ((hue5 >= 165 && hue5 <= 240) || (hue6 >= 165 && hue6 <= 240)) {
+                spin1CW();
+                telemetry.addLine("Purple in Back");
+                telemetry.addData("Queue", queue);
+            }
+        }
+        telemetry.update();
+    }
+
     public void killMotors() {
         leftFrontDrive.setPower(0);
         leftBackDrive.setPower(0);
