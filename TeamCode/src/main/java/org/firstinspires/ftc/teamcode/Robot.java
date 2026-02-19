@@ -50,6 +50,10 @@ public class Robot {
     static double dexI = 0.01;
     static double dexD = 0.00001;
     static double dexF = 6;
+    static double turP = 2.5;
+    static double turI = 0.0;
+    static double turD = 0.0;
+    static double turF = 1.0;
     static double lkRaised = 0.0;
     static double lkLowered = 0.8;
     static double rkRaised = 1.0;
