@@ -50,18 +50,18 @@ public class Robot {
     static double dexI = 0.01;
     static double dexD = 0.00001;
     static double dexF = 6;
-    static double turP = 2.5;
+    static double turP = 0.4;
     static double turI = 0.0;
     static double turD = 0.0;
-    static double turF = 1.0;
+    static double turF = 4;
     static double lkRaised = 0.0;
     static double lkLowered = 0.8;
     static double rkRaised = 1.0;
     static double rkLowered = 0.2;
-    static double transferRest = 0.489;
-    static double transfer1 = 0.414;
-    static double transfer2 = 0.342;
-    static double transfer3 = 0.269;
+    static double transferRest = 0.483;
+    static double transfer1 = 0.408;
+    static double transfer2 = 0.336;
+    static double transfer3 = 0.263;
     static int transferOneTime = 270;
     static int spindexPose;
     static int numberOfSpins = 0;
@@ -77,7 +77,7 @@ public class Robot {
     static double turretDistanceToGoal;
     static int xBlueGoal = 11;
     static int xRedGoal = 133;
-    static int yGoal = 136;
+    static int yGoal = 135;
     static double velocityA = -0.011707;
     static double velocityB = 8.7054;
     static double velocityC = 1341.44834;
@@ -101,59 +101,51 @@ public class Robot {
 
     public static String data = "Default data";
 
-    public static FollowerConstants followerConstants = new FollowerConstants() // All to change
-            .mass(9.52544)
-            .forwardZeroPowerAcceleration(-31.515593658598892)
-            .lateralZeroPowerAcceleration(-58.830920754537615)
-            .translationalPIDFCoefficients(new com.pedropathing.control.PIDFCoefficients(0.044, 0, 0.0, 0.023))
-            .headingPIDFCoefficients(new com.pedropathing.control.PIDFCoefficients(0.46, 0, 0.002, 0.023))
-            .drivePIDFCoefficients(new FilteredPIDFCoefficients(0.04, 0, 0.0001, 0.6, 0.023))
-            .centripetalScaling(0.0005);
-
-
-    public static MecanumConstants driveConstants = new MecanumConstants() // All to change
-            .maxPower(1)
-            .rightFrontMotorName("fr")
-            .rightRearMotorName("br")
-            .leftRearMotorName("bl")
-            .leftFrontMotorName("fl")
-            .leftFrontMotorDirection(DcMotorSimple.Direction.FORWARD)
-            .leftRearMotorDirection(DcMotorSimple.Direction.FORWARD)
-            .rightFrontMotorDirection(DcMotorSimple.Direction.REVERSE)
-            .rightRearMotorDirection(DcMotorSimple.Direction.REVERSE)
-            .xVelocity(66.26776026928519)
-            .yVelocity(54.264240895669296);
-
-
-    public static PinpointConstants localizerConstants = new PinpointConstants() // All to change
-            .forwardPodY(7.779)
-            .strafePodX(8.0)
-            .distanceUnit(DistanceUnit.INCH)
-            .hardwareMapName("pinpoint")
-            .encoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD)
-            .forwardEncoderDirection(GoBildaPinpointDriver.EncoderDirection.FORWARD)
-            .strafeEncoderDirection(GoBildaPinpointDriver.EncoderDirection.FORWARD);
-
-    public static PathConstraints pathConstraints = new PathConstraints(0.99,
-            100,
-            1.4,
-            1); // All to change
-
-
-    public static Follower createFollower(HardwareMap hardwareMap) {
-        return new FollowerBuilder(followerConstants, hardwareMap)
-                .pathConstraints(pathConstraints)
-                .mecanumDrivetrain(driveConstants)
-                .pinpointLocalizer(localizerConstants)
-                .build(); // All to change
-    }
-
-    public static void init(HardwareMap hardwareMap) {
-
-
-//        follower = Constants.createFollower(hardwareMap);
-//        follower.update();
-    }
+//    public static FollowerConstants followerConstants = new FollowerConstants() // All to change
+//            .mass(14.74);
+//
+//
+//    public static MecanumConstants driveConstants = new MecanumConstants() // All to change
+//            .maxPower(1)
+//            .rightFrontMotorName("fr")
+//            .rightRearMotorName("br")
+//            .leftRearMotorName("bl")
+//            .leftFrontMotorName("fl")
+//            .leftFrontMotorDirection(DcMotorSimple.Direction.REVERSE)
+//            .leftRearMotorDirection(DcMotorSimple.Direction.REVERSE)
+//            .rightFrontMotorDirection(DcMotorSimple.Direction.FORWARD)
+//            .rightRearMotorDirection(DcMotorSimple.Direction.REVERSE);
+//
+//
+//    public static PinpointConstants localizerConstants = new PinpointConstants() // All to change
+//            .forwardPodY(7.779)
+//            .strafePodX(8.0)
+//            .distanceUnit(DistanceUnit.INCH)
+//            .hardwareMapName("pinpoint")
+//            .encoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD)
+//            .forwardEncoderDirection(GoBildaPinpointDriver.EncoderDirection.FORWARD)
+//            .strafeEncoderDirection(GoBildaPinpointDriver.EncoderDirection.FORWARD);
+//
+//    public static PathConstraints pathConstraints = new PathConstraints(0.99,
+//            100,
+//            1.4,
+//            1); // All to change
+//
+//
+//    public static Follower createFollower(HardwareMap hardwareMap) {
+//        return new FollowerBuilder(followerConstants, hardwareMap)
+//                .pathConstraints(pathConstraints)
+//                .mecanumDrivetrain(driveConstants)
+//                .pinpointLocalizer(localizerConstants)
+//                .build(); // All to change
+//    }
+//
+//    public static void init(HardwareMap hardwareMap) {
+//
+//
+////        follower = Constants.createFollower(hardwareMap);
+////        follower.update();
+//    }
 }
 
 

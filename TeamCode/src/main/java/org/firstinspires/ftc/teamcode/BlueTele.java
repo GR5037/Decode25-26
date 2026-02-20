@@ -5,13 +5,17 @@ import static com.qualcomm.robotcore.hardware.DcMotor.ZeroPowerBehavior.FLOAT;
 
 
 import static org.firstinspires.ftc.teamcode.Robot.angleA;
+import static org.firstinspires.ftc.teamcode.Robot.ejectSwitch;
+import static org.firstinspires.ftc.teamcode.Robot.flywheelOn;
 import static org.firstinspires.ftc.teamcode.Robot.flywheelVelocity;
+import static org.firstinspires.ftc.teamcode.Robot.hoodMax;
 import static org.firstinspires.ftc.teamcode.Robot.numberOfSpins;
 import static org.firstinspires.ftc.teamcode.Robot.spindexPose;
 import static org.firstinspires.ftc.teamcode.Robot.turretDistanceToGoal;
 import static org.firstinspires.ftc.teamcode.Robot.velocityA;
 import static org.firstinspires.ftc.teamcode.Robot.velocityB;
 import static org.firstinspires.ftc.teamcode.Robot.velocityC;
+import static org.firstinspires.ftc.teamcode.Robot.velocityMin;
 import static org.firstinspires.ftc.teamcode.Robot.xBlueGoal;
 import static org.firstinspires.ftc.teamcode.Robot.xTurretPose;
 import static org.firstinspires.ftc.teamcode.Robot.yGoal;
@@ -119,15 +123,10 @@ public class BlueTele extends OpMode {
         leftBackDrive = hardwareMap.get(DcMotor.class, "bl");
         rightBackDrive = hardwareMap.get(DcMotor.class, "br");
 
-        leftFrontDrive.setDirection(DcMotor.Direction.REVERSE); // Change
-        rightFrontDrive.setDirection(DcMotor.Direction.REVERSE); // Change
-        leftBackDrive.setDirection(DcMotor.Direction.REVERSE); // Change
-        rightBackDrive.setDirection(DcMotor.Direction.FORWARD); // Change
-
-        leftFrontDrive.setZeroPowerBehavior(BRAKE);
-        rightFrontDrive.setZeroPowerBehavior(BRAKE);
-        leftBackDrive.setZeroPowerBehavior(BRAKE);
-        rightBackDrive.setZeroPowerBehavior(BRAKE);
+//        leftFrontDrive.setZeroPowerBehavior(BRAKE);
+//        rightFrontDrive.setZeroPowerBehavior(BRAKE);
+//        leftBackDrive.setZeroPowerBehavior(BRAKE);
+//        rightBackDrive.setZeroPowerBehavior(BRAKE);
 
         transfer = hardwareMap.get(Servo.class, "transfer");
         leftKickstand = hardwareMap.get(Servo.class, "Lstand");
@@ -160,7 +159,6 @@ public class BlueTele extends OpMode {
         PIDFCoefficients spindexpidfCoefficients = new PIDFCoefficients(Robot.dexP, Robot.dexI, Robot.dexD, Robot.dexF);
         PIDFCoefficients turretpidCoefficients = new PIDFCoefficients(Robot.turP, Robot.turI, Robot.turD, Robot.turF);
 
-        flywheel.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         flywheel.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, flywheelpidfCoefficients);
         spindex.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         spindex.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, spindexpidfCoefficients);
@@ -177,18 +175,21 @@ public class BlueTele extends OpMode {
 
     @Override
     public void start(){
-        hood.setPosition(0.3);
         rightKickstand.setPosition(Robot.rkRaised);
         leftKickstand.setPosition(Robot.lkRaised);
         transfer.setPosition(Robot.transferRest);
         Robot.spindexPose = 0;
-
-        follower.startTeleopDrive();
+        Robot.flywheelOn = false;
+        Robot.ejectSwitch = 0;
+        follower.startTeleOpDrive(true);
+        runtime.reset();
     }
 
     @Override
     public void loop() {
         follower.update();
+        follower.setTeleOpDrive(gamepad1.left_stick_y, gamepad1.left_stick_x, gamepad1.right_stick_x, true);
+
         //Relocalise (not cam yet)
         if (gamepad1.yWasPressed()) {
             follower.setPose(new Pose(7.54, 8.83,0));
@@ -225,9 +226,9 @@ public class BlueTele extends OpMode {
             deltaTargetAngle -= 2 * Math.PI;
         }
         totalTurretAngle += deltaTargetAngle;
-        if (totalTurretAngle < -3 * Math.PI / 2){
+        if (totalTurretAngle < -Math.toRadians(300)){
             totalTurretAngle = Math.PI / 2;
-        } else if (totalTurretAngle > 3 * Math.PI / 2){
+        } else if (totalTurretAngle > Math.toRadians(300)){
             totalTurretAngle = -Math.PI / 2;
         }
         lastTurretAngle = totalTurretAngle;
@@ -237,7 +238,10 @@ public class BlueTele extends OpMode {
         turret.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         turret.setPower(1.0);
 
-        hood.setPosition(Robot.hoodAngle);
+        if (ejectSwitch == 0) {
+            hood.setPosition(Robot.hoodAngle);
+        }
+
 
         //Flywheel
         if (gamepad2.left_bumper) {
@@ -251,15 +255,12 @@ public class BlueTele extends OpMode {
             PIDFCoefficients turretpidCoefficients = new PIDFCoefficients(Robot.turP, Robot.turI, Robot.turD, Robot.turF);
             turret.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, turretpidCoefficients);
         }
-        if (Robot.flywheelOn) {
-            flywheel.setVelocity(Robot.flywheelVelocity);
-        } else {
+        if (!Robot.flywheelOn) {
             flywheel.setVelocity(0.0);
+        } else if (ejectSwitch == 0){
+            flywheel.setVelocity(flywheelVelocity);
         }
 
-        //Drive
-//        drive(gamepad1.left_stick_y, gamepad1.left_stick_x, gamepad1.right_stick_x);
-        drive(gamepad2.left_stick_y, gamepad2.left_stick_x, gamepad2.right_stick_x);
 
 
         //Intake
@@ -391,11 +392,19 @@ public class BlueTele extends OpMode {
             break;
         }
 
-        //Eject current ball (not done)
+        //Eject current ball
         switch (Robot.ejectSwitch) {
             case 0:
-                if (gamepad2.dpadUpWasPressed()) {
+                if (gamepad2.dpad_up) {
                     queue.clear();
+                    hood.setPosition(hoodMax);
+                    flywheel.setVelocity(velocityMin);
+                    runtime.reset();
+                    Robot.ejectSwitch++;
+                }
+            break;
+            case 1:
+                if (runtime.milliseconds() > 500) {
                     transfer.setPosition(Robot.transfer1);
                     if (Robot.numberOfBalls > 0) {
                         Robot.numberOfBalls--;
@@ -404,7 +413,7 @@ public class BlueTele extends OpMode {
                     Robot.ejectSwitch++;
                 }
             break;
-            case 1:
+            case 2:
                 if (runtime.milliseconds() > Robot.transferOneTime) {
                     transfer.setPosition(Robot.transferRest);
                     Robot.ejectSwitch = 0;
@@ -449,6 +458,8 @@ public class BlueTele extends OpMode {
         telemetry.addData("distance", RBcolor.getDistance(DistanceUnit.CM));
         telemetry.addData("Color", RBcolor.getNormalizedColors());
         telemetry.addData("RBG", RBcolor.green());
+        telemetry.addData("eject", ejectSwitch);
+        telemetry.addData("up", gamepad2.dpad_up);
 
         telemetryM.debug(turretEncoder);
         telemetryM.debug(turret.getCurrentPosition());
