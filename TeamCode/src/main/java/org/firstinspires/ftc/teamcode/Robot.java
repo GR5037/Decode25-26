@@ -41,18 +41,20 @@ import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 
 @Configurable
 public class Robot {
-
+    static double xPoseFromAuto = 0;
+    static double yPoseFromAuto = 0;
+    static double headingFromAuto = 0;
     static double flyP = 200;
     static double flyI = 0;
     static double flyD = 0;
     static double flyF = 13.1;
-    static double dexP = 0.7;
+    static double dexP = 0.3;
     static double dexI = 0.01;
-    static double dexD = 0.00001;
+    static double dexD = 0.0000;
     static double dexF = 6;
-    static double turP = 0.4;
-    static double turI = 0.0;
-    static double turD = 0.0;
+    static double turP = 0.6;
+    static double turI = 0.001;
+    static double turD = 0.000001;
     static double turF = 4;
     static double lkRaised = 0.0;
     static double lkLowered = 0.8;
@@ -62,7 +64,7 @@ public class Robot {
     static double transfer1 = 0.408;
     static double transfer2 = 0.336;
     static double transfer3 = 0.263;
-    static int transferOneTime = 270;
+    static int transferOneTime = 280;
     static int spindexPose;
     static int numberOfSpins = 0;
     static int numberOfBalls = 0;
@@ -78,17 +80,17 @@ public class Robot {
     static int xBlueGoal = 11;
     static int xRedGoal = 133;
     static int yGoal = 135;
-    static double velocityA = -0.011707;
-    static double velocityB = 8.7054;
-    static double velocityC = 1341.44834;
+    static double velocityA = 0.0110641;
+    static double velocityB = 6.11461;
+    static double velocityC = 1380.89071;
     static double velocity1;
     static double velocity2;
     static int velocityMax = 2400;
     static int velocityMin = 1500;
     static int flywheelVelocity;
-    static double angleA = 0.0000180208;
-    static double angleB = -0.00838942;
-    static double angleC = 0.928578;
+    static double angleA = 0.0000218802;
+    static double angleB = -0.00827392;
+    static double angleC = 0.919846;
     static double angle1;
     static double angle2;
     static double hoodMax = 0.0;

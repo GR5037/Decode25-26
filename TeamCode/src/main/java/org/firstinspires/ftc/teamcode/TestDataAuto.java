@@ -15,7 +15,7 @@ import org.firstinspires.ftc.teamcode.KitBot.KitBotRobot;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 
 @Autonomous(name = "TestDataAuto", group = "Auto", preselectTeleOp= "EncoderTest")
-
+@Disabled
 public class TestDataAuto extends OpMode {
 
 //    KitBotRobot robot = new KitBotRobot();
