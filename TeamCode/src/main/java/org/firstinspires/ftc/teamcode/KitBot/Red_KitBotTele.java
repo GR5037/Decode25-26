@@ -391,7 +391,7 @@ public class Red_KitBotTele extends OpMode {
                 }
                 break;
             case SPIN_UP:
-                launcher.setVelocity(LAUNCHER_TARGET_VELOCITY);
+                launcher.setVelocity(1760);
                 if (launcher.getVelocity() > LAUNCHER_MIN_VELOCITY  && feederTimer.seconds() > DOWN_TIME_SECONDS) {
                     launchState = LaunchState.LAUNCH;
                 }

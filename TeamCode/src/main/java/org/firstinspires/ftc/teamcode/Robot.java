@@ -51,7 +51,7 @@ public class Robot {
     static double dexP = 0.3;
     static double dexI = 0.01;
     static double dexD = 0.0000;
-    static double dexF = 6;
+    static double dexF = 5;
     static double turP = 0.6;
     static double turI = 0.001;
     static double turD = 0.000001;
@@ -60,11 +60,11 @@ public class Robot {
     static double lkLowered = 0.8;
     static double rkRaised = 1.0;
     static double rkLowered = 0.2;
-    static double transferRest = 0.483;
+    static double transferRest = 0.488;
     static double transfer1 = 0.408;
     static double transfer2 = 0.336;
-    static double transfer3 = 0.263;
-    static int transferOneTime = 280;
+    static double transfer3 = 0.262;
+    static int transferOneTime = 380;
     static int spindexPose;
     static int numberOfSpins = 0;
     static int numberOfBalls = 0;
@@ -77,9 +77,9 @@ public class Robot {
     static double xTurretPose;
     static double yTurretPose;
     static double turretDistanceToGoal;
-    static int xBlueGoal = 11;
-    static int xRedGoal = 133;
-    static int yGoal = 135;
+    static int xBlueGoal = 7;
+    static int xRedGoal = 137;
+    static int yGoal = 137;
     static double velocityA = 0.0110641;
     static double velocityB = 6.11461;
     static double velocityC = 1380.89071;
@@ -96,11 +96,7 @@ public class Robot {
     static double hoodMax = 0.0;
     static double hoodMin = 0.73;
     static double hoodAngle;
-
-
-
-//    private Limelight3A limelight;
-
+    static double turretOffsetFromAuto = 0;
     public static String data = "Default data";
 
 //    public static FollowerConstants followerConstants = new FollowerConstants() // All to change

@@ -10,9 +10,11 @@ import static org.firstinspires.ftc.teamcode.Robot.flywheelOn;
 import static org.firstinspires.ftc.teamcode.Robot.flywheelVelocity;
 import static org.firstinspires.ftc.teamcode.Robot.headingFromAuto;
 import static org.firstinspires.ftc.teamcode.Robot.hoodMax;
+import static org.firstinspires.ftc.teamcode.Robot.launchAllSwitch;
 import static org.firstinspires.ftc.teamcode.Robot.numberOfBalls;
 import static org.firstinspires.ftc.teamcode.Robot.numberOfSpins;
 import static org.firstinspires.ftc.teamcode.Robot.spindexPose;
+import static org.firstinspires.ftc.teamcode.Robot.transferRest;
 import static org.firstinspires.ftc.teamcode.Robot.turretDistanceToGoal;
 import static org.firstinspires.ftc.teamcode.Robot.velocityA;
 import static org.firstinspires.ftc.teamcode.Robot.velocityB;
@@ -29,6 +31,8 @@ import static org.firstinspires.ftc.teamcode.Robot.yTurretPose;
 import com.bylazar.panels.Panels;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.Pose;
+import com.qualcomm.hardware.limelightvision.LLResult;
+import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.bylazar.telemetry.PanelsTelemetry;
@@ -52,8 +56,9 @@ import java.util.List;
 
 
 //@Configurable
-@TeleOp(name = "RedTele", group = "Test")
+@TeleOp(name = "RedTele", group = "Tele")
 public class RedTele extends OpMode {
+    private Limelight3A limelight;
     static DcMotor leftFrontDrive;
     static DcMotor rightFrontDrive;
     static DcMotor leftBackDrive;
@@ -88,6 +93,8 @@ public class RedTele extends OpMode {
     double lastTurretAngle = 0;
     double totalTurretAngle = 0;
     int turretEncoder = 0;
+    boolean holdPosition = false;
+    public Pose savedPose;
 
 
 //    NormalizedRGBA colors1 = LTcolor.getNormalizedColors();
@@ -176,29 +183,62 @@ public class RedTele extends OpMode {
         ABSturret = hardwareMap.get(AnalogInput.class, "ABSturret");
         ABSspindex = hardwareMap.get(AnalogInput.class, "ABSspindex");
 
+        limelight = hardwareMap.get(Limelight3A.class, "limelight");
+        limelight.pipelineSwitch(3);
     }
 
     @Override
     public void start(){
+//        limelight.start();
+
         rightKickstand.setPosition(Robot.rkRaised);
         leftKickstand.setPosition(Robot.lkRaised);
         transfer.setPosition(Robot.transferRest);
-        Robot.spindexPose = 0;
-        Robot.flywheelOn = false;
+        Robot.numberOfSpins = 0;
+        Robot.numberOfBalls = 0;
         Robot.ejectSwitch = 0;
+        Robot. kickstandSwitch = 0;
+        Robot. launchOneSwitch = 0;
+        Robot. launchAllSwitch = 0;
+        Robot.gateSwitch = 0;
+        Robot.spindexPose = 0;
+        Robot.flywheelOn = true;
         follower.startTeleOpDrive(true);
-        follower.setPose(new Pose(xPoseFromAuto,yPoseFromAuto,headingFromAuto));
         runtime.reset();
     }
 
     @Override
     public void loop() {
         follower.update();
-        follower.setTeleOpDrive(-gamepad1.left_stick_y, -gamepad1.left_stick_x, -gamepad1.right_stick_x, true);
+//        LLResult llResult = limelight.getLatestResult();
+
+
 
         //Relocalise (not cam yet)
         if (gamepad1.yWasPressed() && gamepad1.dpadUpWasPressed()) {
             follower.setPose(new Pose(7.54, 8.83,0));
+        }
+
+        if (gamepad1.right_trigger > 0.1) {
+            if (!holdPosition) {
+                follower.breakFollowing();
+                savedPose = new Pose(follower.getPose().getX(), follower.getPose().getY(), follower.getHeading());
+                holdPosition = true;
+                follower.holdPoint(savedPose);
+            }
+        } else {
+            if (holdPosition) {
+                follower.startTeleOpDrive(true);
+                holdPosition = false;
+            }
+            if (gamepad1.left_trigger > 0.1) {
+                follower.setTeleOpDrive((-0.5 * gamepad1.left_stick_y), (-0.5 * gamepad1.left_stick_x), (-0.5 * gamepad1.right_stick_x), true);
+            } else if (gamepad1.left_bumper) {
+                follower.setTeleOpDrive(-gamepad1.left_stick_y, -gamepad1.left_stick_x, -gamepad1.right_stick_x, false);
+            } else {
+                follower.setTeleOpDrive(-gamepad1.left_stick_y, -gamepad1.left_stick_x, -gamepad1.right_stick_x, true);
+            }
+
         }
 
         //Calculations
@@ -206,9 +246,10 @@ public class RedTele extends OpMode {
 
         Robot.xTurretPose = follower.getPose().getX() + 2.7062 * (Math.cos(robotHeading + Math.toRadians(85.24)));
         Robot.yTurretPose = follower.getPose().getY() + 2.7062 * (Math.sin(robotHeading + Math.toRadians(85.24)));
+
         Robot.turretDistanceToGoal = Math.hypot(Robot.xTurretPose - Robot.xRedGoal, Robot.yTurretPose - Robot.yGoal);
 
-        Robot.velocity1 = Robot.velocityA * (Math.pow(Robot.turretDistanceToGoal , 2));
+        Robot.velocity1 = Robot.velocityA * (Math.pow(Robot.turretDistanceToGoal, 2));
         Robot.velocity2 = Robot.velocityB * Robot.turretDistanceToGoal;
         Robot.flywheelVelocity = (int) (Robot.velocity1 + Robot.velocity2 + Robot.velocityC);
         if (Robot.flywheelVelocity > Robot.velocityMax) {
@@ -226,11 +267,11 @@ public class RedTele extends OpMode {
             Robot.hoodAngle = Robot.hoodMin;
         }
 
-        currentTurretAngle = Math.atan2((yGoal - yTurretPose),(xRedGoal - xTurretPose)) - follower.getHeading();
+        currentTurretAngle = Math.atan2((yGoal - yTurretPose),(xRedGoal - xTurretPose)) - robotHeading;
         deltaTargetAngle = currentTurretAngle - lastTurretAngle;
         if (deltaTargetAngle < -Math.PI){
             deltaTargetAngle += 2 * Math.PI;
-        } else if (deltaTargetAngle > Math.PI){
+        } else if (deltaTargetAngle > Math.PI) {
             deltaTargetAngle -= 2 * Math.PI;
         }
         totalTurretAngle += deltaTargetAngle;
@@ -347,7 +388,7 @@ public class RedTele extends OpMode {
                 break;
             case 2:
                 if (runtime.milliseconds() > Robot.transferOneTime) {
-                    spin1CW();
+//                    spin1CW();
                     Robot.launchOneSwitch++;
                 }
                 break;
@@ -359,7 +400,7 @@ public class RedTele extends OpMode {
         }
         switch (Robot.launchAllSwitch) { //launch all balls
             case 0:
-                if (gamepad2.b) {
+                if (gamepad2.bWasPressed()) {
                     queue.clear();
                     transfer.setPosition(Robot.transfer1);
                     if (Robot.numberOfBalls > 0) {
@@ -415,21 +456,33 @@ public class RedTele extends OpMode {
                 queue.clear();
                 break;
         }
+        if (gamepad2.bWasReleased()) {
+            if (launchAllSwitch != 2 && launchAllSwitch != 4) {
+                launchAllSwitch = 0;
+                transfer.setPosition(transferRest);
+            } else {
+                launchAllSwitch = 0;
+                ejectSwitch = 1;
+            }
+        }
 
         //Eject current ball
         switch (Robot.ejectSwitch) {
             case 0:
                 if (gamepad2.dpad_up) {
-                    queue.clear();
-                    hood.setPosition(hoodMax);
-                    flywheel.setVelocity(velocityMin);
-                    runtime.reset();
-                    Robot.ejectSwitch++;
+                    ejectSwitch++;
                 }
                 break;
             case 1:
-                if (runtime.milliseconds() > 500) {
-                    transfer.setPosition(Robot.transfer1);
+                queue.clear();
+                hood.setPosition(hoodMax);
+                flywheel.setVelocity(0);
+                runtime.reset();
+                Robot.ejectSwitch++;
+                break;
+            case 2:
+                if (runtime.milliseconds() > 100 && !spindex.isBusy()) {
+                    transfer.setPosition(Robot.transfer3);
                     if (Robot.numberOfBalls > 0) {
                         Robot.numberOfBalls--;
                     }
@@ -437,7 +490,7 @@ public class RedTele extends OpMode {
                     Robot.ejectSwitch++;
                 }
                 break;
-            case 2:
+            case 3:
                 if (runtime.milliseconds() > Robot.transferOneTime) {
                     transfer.setPosition(Robot.transferRest);
                     Robot.ejectSwitch = 0;
@@ -472,18 +525,19 @@ public class RedTele extends OpMode {
 //            queueGreen();
 //        }
 
-
-
-
-        //Telemetry
+        // Telemetry
         telemetryM.debug("current", currentTurretAngle);
         telemetryM.debug("delta", deltaTargetAngle);
         telemetryM.debug("total", totalTurretAngle);
         telemetryM.debug("encoder", turretEncoder);
 
 //        telemetry.addData("# of balls", Robot.numberOfBalls);
-//        telemetry.addData("hood angle", Robot.hoodAngle);
-//        telemetry.addData("velocity", flywheelVelocity);
+        telemetry.addData("hood angle", Robot.hoodAngle);
+        telemetry.addData("flywheel velocity", flywheelVelocity);
+        telemetry.addData("turret distance to goal", turretDistanceToGoal);
+        telemetry.addData("total turret angle", totalTurretAngle);
+        telemetry.addData("turret encoder", turretEncoder);
+//        telemetry.addData("llresult", llResult.isValid());
 //        telemetry.addData("distance", RBcolor.getDistance(DistanceUnit.CM));
 //        telemetry.addData("Color", RBcolor.getNormalizedColors());
 //        telemetry.addData("RBG", RBcolor.green());

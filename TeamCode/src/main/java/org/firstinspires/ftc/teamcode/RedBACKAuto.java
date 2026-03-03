@@ -34,12 +34,12 @@ public class RedBACKAuto extends OpMode {
     static int Motif = 1; //1=GPP 2=PGP 3=PPG
     static int turretAnglePreload = -20;
     static int turretAngleIntake = 72;
-    static double hoodPosition = 0.3;
-    static double flywheelVelocity = 2300;
+    static double hoodPosition = 0.4;
+    static double flywheelVelocity = 2260;
 
     Robot robot = new Robot();
     static int angle;
-    static int turretPose;
+
 
     static DcMotor leftFrontDrive;
     static DcMotor rightFrontDrive;
@@ -64,40 +64,27 @@ public class RedBACKAuto extends OpMode {
     static AnalogInput ABSspindex;
 
     private final Pose startPose = new Pose(88, 7.54, Math.toRadians(90));
-    private final Pose launchPreloadPose = new Pose(88, 15, Math.toRadians(65));
-
-    private final Pose firstTurn = new Pose(112, 10, Math.toRadians(0));
-
-    private final Pose controlPoint1 = new Pose(100, 22);
-    private final Pose intakeIn = new Pose(132.5, 9.5, Math.toRadians(0));
+    private final Pose launchPosition = new Pose(88, 20, Math.toRadians(0));
+    private final Pose lineUpPose = new Pose(112, 9.5, Math.toRadians(0));
+    private final Pose intakeIn = new Pose(131.5, 9.5, Math.toRadians(0));
     private final Pose intakeOut = new Pose(126, 9.5, Math.toRadians(0));
-    private final Pose launchPosition = new Pose(94, 15, Math.toRadians(65));
-    private PathChain turn;
-    private Path launchPreload, lineUp, firstIntake,  intakingOut, secondIntakingIn, launch, blindIntaking;
+    private PathChain launchToIntake;
+    private Path  launchPreload,  intakingOut, secondIntakingIn, launch;
     private Follower follower;
     private Timer pathTimer, actionTimer, opmodeTimer;
     private int pathState;
     static ElapsedTime runtime = new ElapsedTime();
 
-    int shootState = 0;
-
     private void buildPaths() {
-        turn = follower.pathBuilder()
-            .addPath(new BezierCurve(startPose,controlPoint1,firstTurn))
-            .setLinearHeadingInterpolation(startPose.getHeading(), firstTurn.getHeading())
-            .addPath(new BezierLine(firstTurn, intakeIn))
+        launchPreload = new Path(new BezierLine(startPose, launchPosition));
+        launchPreload.setLinearHeadingInterpolation(startPose.getHeading(), launchPosition.getHeading());
+
+        launchToIntake = follower.pathBuilder()
+            .addPath(new BezierLine(launchPosition, lineUpPose))
+            .setConstantHeadingInterpolation(lineUpPose.getHeading())
+            .addPath(new BezierLine(lineUpPose, intakeIn))
             .setConstantHeadingInterpolation(intakeIn.getHeading())
             .build();
-
-        launchPreload = new Path(new BezierLine(startPose, launchPreloadPose));
-        launchPreload.setConstantHeadingInterpolation(launchPreloadPose.getHeading());
-
-        lineUp = new Path(new BezierLine(launchPreloadPose, firstTurn));
-        lineUp.setConstantHeadingInterpolation(firstTurn.getHeading());
-
-        firstIntake = new Path(new BezierLine(firstTurn, intakeIn));
-        firstIntake.setConstantHeadingInterpolation(intakeIn.getHeading());
-
 
         intakingOut = new Path(new BezierLine(intakeIn, intakeOut));
         intakingOut.setConstantHeadingInterpolation(intakeOut.getHeading());
@@ -107,71 +94,74 @@ public class RedBACKAuto extends OpMode {
 
         launch = new Path(new BezierLine(intakeIn, launchPosition));
         launch.setConstantHeadingInterpolation(launchPosition.getHeading());
-
-        blindIntaking = new Path(new BezierLine(launchPosition, intakeIn));
-        blindIntaking.setConstantHeadingInterpolation(intakeIn.getHeading());
     }
 
     public void autoPathUpdate() {
         switch (pathState) {
             case 0:
                 flywheel.setVelocity(flywheelVelocity);
+                hood.setPosition(hoodPosition);
                 spindex.setTargetPosition(0);
                 spindex.setMode(DcMotor.RunMode.RUN_TO_POSITION);
                 spindex.setPower(1.0);
-                hood.setPosition(hoodPosition);
-                turretPose = turretAnglePreload;
+                aimTurret(66);
                 follower.followPath(launchPreload);
-
                 setPathState(pathState + 1);
                 break;
             case 1:
-                if (!follower.isBusy() && flywheel.getVelocity() > flywheelVelocity - 50) {
+                if (!follower.isBusy() && (flywheel.getVelocity() > (flywheelVelocity - 60))) {
                     launchAllSwitch = 1;
                     setPathState(pathState + 1);
                 }
                 break;
             case 2:
                 if (launchAllSwitch == 0) {
-                    follower.setMaxPower(0.5);
-                    follower.followPath(lineUp);
+                    follower.followPath(launchToIntake);
                     gateSwitch = 1;
                     setPathState(pathState + 1);
                 }
                 break;
             case 3:
-                if (!follower.isBusy()) {
-                    follower.followPath(firstIntake);
-                    setPathState(pathState + 1);
-                }
-            case 4:
-                if (!follower.isBusy()) {
+                if (!follower.isBusy() && pathTimer.getElapsedTimeSeconds() > 0.5) {
                     follower.followPath(intakingOut);
                     setPathState(pathState + 1);
                 }
                 break;
-            case 5:
-                if (gateSwitch > 2 && pathTimer.getElapsedTimeSeconds() > 2) {
+            case 4:
+                if (gateSwitch > 2 || pathTimer.getElapsedTimeSeconds() > 3) {
                     follower.followPath(secondIntakingIn);
                     setPathState(pathState + 1);
                 }
                 break;
-            case 6:
-                if (gateSwitch > 6 || pathTimer.getElapsedTimeSeconds() > 5) {
+            case 5:
+                if (gateSwitch > 6 || pathTimer.getElapsedTimeSeconds() > 3) {
                     follower.followPath(launch);
                     intake.setPower(-0.3);
                     setPathState(pathState + 1);
                 }
                 break;
-            case 7:
+            case 6:
                 if (!follower.isBusy()) {
                     launchAllSwitch = 1;
                     setPathState(pathState + 1);
                 }
                 break;
-            case 8:
+            case 7:
                 if (launchAllSwitch == 0) {
-                    follower.followPath(lineUp);
+                    follower.followPath(launchToIntake);
+                    gateSwitch = 1;
+                    setPathState(pathState + 1);
+                }
+                break;
+            case 8:
+                if (!follower.isBusy() && pathTimer.getElapsedTimeSeconds() > 2) {
+                    follower.followPath(launch);
+                    setPathState(pathState + 1);
+                }
+                break;
+            case 9:
+                if (!follower.isBusy()) {
+                    launchAllSwitch = 1;
                     setPathState(pathState + 1);
                 }
                 break;
@@ -223,7 +213,7 @@ public class RedBACKAuto extends OpMode {
         turret.setZeroPowerBehavior(BRAKE);
 
         PIDFCoefficients flywheelpidfCoefficients = new PIDFCoefficients(Robot.flyP, Robot.flyI, Robot.flyD, Robot.flyF);
-        PIDFCoefficients spindexpidfCoefficients = new PIDFCoefficients(0.3, 0.05, 0, 4);
+        PIDFCoefficients spindexpidfCoefficients = new PIDFCoefficients(0.3, 0.05, 0, 5);
         PIDFCoefficients turretpidCoefficients = new PIDFCoefficients(Robot.turP, Robot.turI, Robot.turD, Robot.turF);
 
         flywheel.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, flywheelpidfCoefficients);
@@ -233,7 +223,7 @@ public class RedBACKAuto extends OpMode {
         turret.setTargetPosition(0);
         turret.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, turretpidCoefficients);
         turret.setPower(1.0);
-        spindex.setTargetPositionTolerance(10);
+        spindex.setTargetPositionTolerance(15);
 
         gate = hardwareMap.get(DigitalChannel.class, "gate");
         gate.setMode(DigitalChannel.Mode.INPUT);
@@ -272,12 +262,14 @@ public class RedBACKAuto extends OpMode {
         autoPathUpdate();
         launchAll();
         autoIntake();
-        aimTurret();
 //         Feedback to Driver Hub for debugging
         telemetry.addData("path state", pathState);
         telemetry.addData("x", follower.getPose().getX());
         telemetry.addData("y", follower.getPose().getY());
         telemetry.addData("heading", follower.getPose().getHeading());
+        telemetry.addData("velocity", flywheel.getVelocity());
+        telemetry.addData("turret", turret.isBusy());
+        telemetry.addData("follower", follower.isBusy());
         telemetry.update();
 
     }
@@ -412,8 +404,8 @@ public class RedBACKAuto extends OpMode {
         spindex.setPower(1.0);
     }
 
-    public static void aimTurret() {
-        angle = (turretPose /360) * 13332;
+    public static void aimTurret(double turretPose) {
+        angle = (int) (((turretPose) /360) * 13332);
         turret.setTargetPosition(angle);
         turret.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         turret.setPower(1.0);

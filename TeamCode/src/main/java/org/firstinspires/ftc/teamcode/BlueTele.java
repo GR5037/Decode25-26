@@ -3,17 +3,21 @@ package org.firstinspires.ftc.teamcode;
 import static com.qualcomm.robotcore.hardware.DcMotor.ZeroPowerBehavior.BRAKE;
 import static com.qualcomm.robotcore.hardware.DcMotor.ZeroPowerBehavior.FLOAT;
 
+import com.bylazar.configurables.annotations.Configurable;
 import com.bylazar.telemetry.PanelsTelemetry;
 
 import static org.firstinspires.ftc.teamcode.Robot.angleA;
 import static org.firstinspires.ftc.teamcode.Robot.ejectSwitch;
 import static org.firstinspires.ftc.teamcode.Robot.flywheelOn;
 import static org.firstinspires.ftc.teamcode.Robot.flywheelVelocity;
+import static org.firstinspires.ftc.teamcode.Robot.gateSwitch;
 import static org.firstinspires.ftc.teamcode.Robot.headingFromAuto;
 import static org.firstinspires.ftc.teamcode.Robot.hoodMax;
+import static org.firstinspires.ftc.teamcode.Robot.launchAllSwitch;
 import static org.firstinspires.ftc.teamcode.Robot.numberOfBalls;
 import static org.firstinspires.ftc.teamcode.Robot.numberOfSpins;
 import static org.firstinspires.ftc.teamcode.Robot.spindexPose;
+import static org.firstinspires.ftc.teamcode.Robot.transferRest;
 import static org.firstinspires.ftc.teamcode.Robot.turretDistanceToGoal;
 import static org.firstinspires.ftc.teamcode.Robot.velocityA;
 import static org.firstinspires.ftc.teamcode.Robot.velocityB;
@@ -30,6 +34,8 @@ import static org.firstinspires.ftc.teamcode.Robot.yTurretPose;
 import com.bylazar.panels.Panels;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.Pose;
+import com.qualcomm.hardware.limelightvision.LLResult;
+import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.bylazar.telemetry.PanelsTelemetry;
@@ -39,6 +45,7 @@ import com.qualcomm.robotcore.hardware.ColorRangeSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DigitalChannel;
+import com.qualcomm.robotcore.hardware.IMU;
 import com.qualcomm.robotcore.hardware.NormalizedRGBA;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.hardware.Servo;
@@ -46,15 +53,19 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.JavaUtil;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
+import org.firstinspires.ftc.robotcore.external.navigation.Position;
+import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 
 import java.util.ArrayList;
 import java.util.List;
 
 
-//@Configurable
-@TeleOp(name = "BlueTele", group = "Test")
+@Configurable
+@TeleOp(name = "BlueTele", group = "Tele")
 public class BlueTele extends OpMode {
+    private Limelight3A limelight;
     static DcMotor leftFrontDrive;
     static DcMotor rightFrontDrive;
     static DcMotor leftBackDrive;
@@ -89,7 +100,12 @@ public class BlueTele extends OpMode {
     double lastTurretAngle = 0;
     double totalTurretAngle = 0;
     int turretEncoder = 0;
-
+    double llX = 0;
+    double llY = 0;
+    double llheading = 0;
+    boolean holdPosition = false;
+    public Pose savedPose;
+    public Pose3D botpose = null;
 
 //    NormalizedRGBA colors1 = LTcolor.getNormalizedColors();
 //    NormalizedRGBA colors2 = LBcolor.getNormalizedColors();
@@ -104,22 +120,14 @@ public class BlueTele extends OpMode {
 //    float hue5 = JavaUtil.colorToHue(colors5.toColor());
 //    float hue6 = JavaUtil.colorToHue(colors6.toColor());
 
-    public enum spindexPosition {
-        LEFT,
-        BACK,
-        RIGHT
-    }
-    public enum spindexColor {
-        PURPLE,
-        GREEN,
-        NONE
-    }
-
     List<String> queue = new ArrayList<>();
 
     @Override
     public void init() {
         robot = new Robot();
+
+        runtime.reset();
+
         follower = Constants.createFollower(hardwareMap);
         follower.update();
         telemetryM = PanelsTelemetry.INSTANCE.getTelemetry();
@@ -177,10 +185,16 @@ public class BlueTele extends OpMode {
         ABSturret = hardwareMap.get(AnalogInput.class, "ABSturret");
         ABSspindex = hardwareMap.get(AnalogInput.class, "ABSspindex");
 
+        limelight = hardwareMap.get(Limelight3A.class, "limelight");
+        limelight.pipelineSwitch(2);
+
+        follower.setPose(new Pose(xPoseFromAuto,yPoseFromAuto,headingFromAuto));
     }
 
     @Override
     public void start(){
+        limelight.start();
+
         rightKickstand.setPosition(Robot.rkRaised);
         leftKickstand.setPosition(Robot.lkRaised);
         transfer.setPosition(Robot.transferRest);
@@ -193,7 +207,9 @@ public class BlueTele extends OpMode {
         Robot.gateSwitch = 0;
         Robot.spindexPose = 0;
         Robot.flywheelOn = true;
-        follower.setPose(new Pose(xPoseFromAuto,yPoseFromAuto,headingFromAuto));
+
+
+
         follower.startTeleOpDrive(true);
         runtime.reset();
     }
@@ -201,19 +217,67 @@ public class BlueTele extends OpMode {
     @Override
     public void loop() {
         follower.update();
-        follower.setTeleOpDrive(-gamepad1.left_stick_y, -gamepad1.left_stick_x, -gamepad1.right_stick_x, true);
+
+        limelight.updateRobotOrientation(Math.toDegrees(follower.getPose().getHeading()));
+        LLResult llResult = limelight.getLatestResult();
+
+        if (llResult != null  && llResult.isValid() ) { //&& gamepad1.yWasPressed() && gamepad1.dpadUpWasPressed()
+            botpose = llResult.getBotpose_MT2();
+
+            llX = (botpose.getPosition().x * 39.37);
+            llY = (botpose.getPosition().y * 39.3);
+            llheading = Math.toRadians(botpose.getOrientation().getYaw());
+
+            telemetry.addData("is valid", llResult.isValid());
+            telemetry.addData("Botpose", botpose.toString());
+
+            telemetry.addData("LL X", llX);
+            telemetry.addData("LL Y", llY);
+            telemetry.addData("LL Heading", llheading);
+
+//            follower.setPose(new Pose(x, y, heading));
+        }
 
         //Relocalise (not cam yet)
         if (gamepad1.yWasPressed() && gamepad1.dpadUpWasPressed()) {
-            follower.setPose(new Pose(136.46, 8.83,Math.toRadians(180)));
+//            follower.setPose(new Pose(llX, llY, llheading));
+            follower.setPose(new Pose(136.46, 8.83, Math.toRadians(180)));
         }
 
+        //Drive
+        if (gamepad1.right_trigger > 0.1) {
+            if (!holdPosition) {
+                follower.breakFollowing();
+                savedPose = new Pose(follower.getPose().getX(), follower.getPose().getY(), follower.getHeading());
+                holdPosition = true;
+                follower.holdPoint(savedPose);
+            }
+        } else {
+            if (holdPosition) {
+                follower.startTeleOpDrive(true);
+                holdPosition = false;
+            }
+            if (gamepad1.left_trigger > 0.1) {
+                follower.setTeleOpDrive((-0.5 * gamepad1.left_stick_y), (-0.5 * gamepad1.left_stick_x), (-0.5 * gamepad1.right_stick_x), true);
+            } else if (gamepad1.left_bumper) {
+                follower.setTeleOpDrive(-gamepad1.left_stick_y, -gamepad1.left_stick_x, -gamepad1.right_stick_x, false);
+            } else {
+                follower.setTeleOpDrive(-gamepad1.left_stick_y, -gamepad1.left_stick_x, -gamepad1.right_stick_x, true);
+            }
+
+        }
+
+
+
         //Calculations
-        Robot.xTurretPose = follower.getPose().getX() + 2.7062 * (Math.cos(Math.toRadians(85.24)) + follower.getPose().getHeading());
-        Robot.yTurretPose = follower.getPose().getY() + 2.7062 * (Math.sin(Math.toRadians(85.24)) + follower.getPose().getHeading());
+        double robotHeading = follower.getPose().getHeading();
+
+        Robot.xTurretPose = follower.getPose().getX() + 2.7062 * (Math.cos(robotHeading + Math.toRadians(85.24)));
+        Robot.yTurretPose = follower.getPose().getY() + 2.7062 * (Math.sin(robotHeading + Math.toRadians(85.24)));
+
         Robot.turretDistanceToGoal = Math.hypot(Robot.xTurretPose - Robot.xBlueGoal, Robot.yTurretPose - Robot.yGoal);
 
-        Robot.velocity1 = Robot.velocityA * (Math.pow(Robot.turretDistanceToGoal , 2));
+        Robot.velocity1 = Robot.velocityA * (Math.pow(Robot.turretDistanceToGoal, 2));
         Robot.velocity2 = Robot.velocityB * Robot.turretDistanceToGoal;
         Robot.flywheelVelocity = (int) (Robot.velocity1 + Robot.velocity2 + Robot.velocityC);
         if (Robot.flywheelVelocity > Robot.velocityMax) {
@@ -231,7 +295,7 @@ public class BlueTele extends OpMode {
             Robot.hoodAngle = Robot.hoodMin;
         }
 
-        currentTurretAngle = Math.atan2((yGoal - yTurretPose),(xBlueGoal - xTurretPose)) - follower.getHeading();
+        currentTurretAngle = Math.atan2((yGoal - yTurretPose),(xBlueGoal - xTurretPose)) - robotHeading;
         deltaTargetAngle = currentTurretAngle - lastTurretAngle;
         if (deltaTargetAngle < -Math.PI){
             deltaTargetAngle += 2 * Math.PI;
@@ -247,11 +311,11 @@ public class BlueTele extends OpMode {
         lastTurretAngle = totalTurretAngle;
         turretEncoder = (int) ((totalTurretAngle / (2 * Math.PI)) * 13332);
 
-        turret.setTargetPosition(0);
+        turret.setTargetPosition(turretEncoder);
         turret.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         turret.setPower(1.0);
 
-        if (Robot.ejectSwitch == 0) {
+        if (ejectSwitch == 0) {
             hood.setPosition(Robot.hoodAngle);
         }
 
@@ -370,7 +434,7 @@ public class BlueTele extends OpMode {
         }
         switch (Robot.launchAllSwitch) { //launch all balls
             case 0:
-                if (gamepad2.b) {
+                if (gamepad2.bWasPressed()) {
                     queue.clear();
                     transfer.setPosition(Robot.transfer1);
                     if (Robot.numberOfBalls > 0) {
@@ -426,21 +490,33 @@ public class BlueTele extends OpMode {
                 queue.clear();
             break;
         }
+        if (gamepad2.bWasReleased()) {
+            if (launchAllSwitch != 2 && launchAllSwitch != 4) {
+                launchAllSwitch = 0;
+                transfer.setPosition(transferRest);
+            } else {
+                launchAllSwitch = 0;
+                ejectSwitch = 1;
+            }
+        }
 
         //Eject current ball
         switch (Robot.ejectSwitch) {
             case 0:
                 if (gamepad2.dpad_up) {
-                    queue.clear();
-                    hood.setPosition(hoodMax);
-                    flywheel.setVelocity(velocityMin);
-                    runtime.reset();
-                    Robot.ejectSwitch++;
+                    ejectSwitch++;
                 }
             break;
             case 1:
-                if (runtime.milliseconds() > 500) {
-                    transfer.setPosition(Robot.transfer1);
+                queue.clear();
+                hood.setPosition(hoodMax);
+                flywheel.setVelocity(0);
+                runtime.reset();
+                Robot.ejectSwitch++;
+            break;
+            case 2:
+                if (runtime.milliseconds() > 100 && !spindex.isBusy()) {
+                    transfer.setPosition(Robot.transfer3);
                     if (Robot.numberOfBalls > 0) {
                         Robot.numberOfBalls--;
                     }
@@ -448,7 +524,7 @@ public class BlueTele extends OpMode {
                     Robot.ejectSwitch++;
                 }
             break;
-            case 2:
+            case 3:
                 if (runtime.milliseconds() > Robot.transferOneTime) {
                     transfer.setPosition(Robot.transferRest);
                     Robot.ejectSwitch = 0;
@@ -484,20 +560,35 @@ public class BlueTele extends OpMode {
 //        }
 
 
-        //Telemetry
-        telemetryM.debug("current", currentTurretAngle);
-        telemetryM.debug("delta", deltaTargetAngle);
-        telemetryM.debug("total", totalTurretAngle);
+//        //Telemetry
+//        telemetryM.debug("current", currentTurretAngle);
+//        telemetryM.debug("delta", deltaTargetAngle);
+//        telemetryM.debug("total", totalTurretAngle);
 
-        telemetryM.debug("distance", turretDistanceToGoal);
+//        telemetryM.debug("distance", turretDistanceToGoal);
 
-        telemetryM.debug("ABS spindexer", ABSspindex.getVoltage());
-        telemetryM.debug("ABS turret", ABSturret.getVoltage());
+//        telemetryM.debug("ABS spindexer", ABSspindex.getVoltage());
+//        telemetryM.debug("ABS turret", ABSturret.getVoltage());
 
-        telemetry.addData("intake", Robot.gateSwitch);
-        telemetry.addData("x", xTurretPose);
+        telemetry.addData("Intake Case", Robot.gateSwitch);
+        telemetry.addData("Gate State", gate.getState());
 
-        telemetry.addData("y", yTurretPose);
+//        telemetry.addData("x", xTurretPose);
+//
+//        telemetry.addData("y", yTurretPose);
+
+//        telemetry.addData("hood angle", Robot.hoodAngle);
+//        telemetry.addData("flywheel velocity", flywheelVelocity);
+//        telemetry.addData("turret distance to goal", turretDistanceToGoal);
+//        telemetry.addData("total turret angle", totalTurretAngle);
+//        telemetry.addData("turret encoder", turretEncoder);
+//
+//        telemetryM.addData("xTurretPose", Robot.xTurretPose);
+//        telemetryM.addData("yTurretPose", Robot.yTurretPose);
+//        telemetryM.addData("turretDistanceToGoal", Robot.turretDistanceToGoal);
+//        telemetryM.addData("total turret angle", totalTurretAngle);
+//        telemetryM.addData("robot heading", follower.getPose().getHeading());
+//        telemetryM.addData("llresult", llResult.isValid());
 
 //        telemetry.addData("hood angle", Robot.hoodAngle);
 //        telemetry.addData("velocity", flywheelVelocity);
@@ -514,7 +605,10 @@ public class BlueTele extends OpMode {
 //
 //        telemetryM.debug(currentTurretAngle);
 //
-        telemetryM.update();
+//        telemetryM.update();
+
+//        telemetry.addData("result", llResult);
+
         telemetry.update();
 
     }
@@ -642,6 +736,8 @@ public class BlueTele extends OpMode {
 //            }
 //        }
 //        telemetry.update();
+
+
 //    }
 
     public void killMotors() {
