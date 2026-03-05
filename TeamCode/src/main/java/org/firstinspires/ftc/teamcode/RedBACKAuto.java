@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode;
 
 import static com.qualcomm.robotcore.hardware.DcMotor.ZeroPowerBehavior.BRAKE;
 import static com.qualcomm.robotcore.hardware.DcMotor.ZeroPowerBehavior.FLOAT;
+import static org.firstinspires.ftc.teamcode.Robot.dexP;
 import static org.firstinspires.ftc.teamcode.Robot.gateSwitch;
 import static org.firstinspires.ftc.teamcode.Robot.launchAllSwitch;
 import static org.firstinspires.ftc.teamcode.Robot.numberOfSpins;
@@ -34,8 +35,10 @@ public class RedBACKAuto extends OpMode {
     static int Motif = 1; //1=GPP 2=PGP 3=PPG
     static int turretAnglePreload = -20;
     static int turretAngleIntake = 72;
-    static double hoodPosition = 0.4;
-    static double flywheelVelocity = 2260;
+    static double hoodPosition = 0.3;
+    static double flywheelVelocity = 2300;
+    static double velocityMin = flywheelVelocity - 70;
+    boolean parkTime = false;
 
     Robot robot = new Robot();
     static int angle;
@@ -65,9 +68,10 @@ public class RedBACKAuto extends OpMode {
 
     private final Pose startPose = new Pose(88, 7.54, Math.toRadians(90));
     private final Pose launchPosition = new Pose(88, 20, Math.toRadians(0));
-    private final Pose lineUpPose = new Pose(112, 9.5, Math.toRadians(0));
-    private final Pose intakeIn = new Pose(131.5, 9.5, Math.toRadians(0));
-    private final Pose intakeOut = new Pose(126, 9.5, Math.toRadians(0));
+    private final Pose lineUpPose = new Pose(92, 10, Math.toRadians(0));
+    private final Pose intakeIn = new Pose(131.5, 10, Math.toRadians(0));
+    private final Pose intakeOut = new Pose(126, 10, Math.toRadians(0));
+    private final Pose park = new Pose(110, 20, Math.toRadians(0));
     private PathChain launchToIntake;
     private Path  launchPreload,  intakingOut, secondIntakingIn, launch;
     private Follower follower;
@@ -99,12 +103,13 @@ public class RedBACKAuto extends OpMode {
     public void autoPathUpdate() {
         switch (pathState) {
             case 0:
+                follower.setMaxPower(0.9);
                 flywheel.setVelocity(flywheelVelocity);
                 hood.setPosition(hoodPosition);
                 spindex.setTargetPosition(0);
                 spindex.setMode(DcMotor.RunMode.RUN_TO_POSITION);
                 spindex.setPower(1.0);
-                aimTurret(66);
+                aimTurret(69);
                 follower.followPath(launchPreload);
                 setPathState(pathState + 1);
                 break;
@@ -115,7 +120,7 @@ public class RedBACKAuto extends OpMode {
                 }
                 break;
             case 2:
-                if (launchAllSwitch == 0) {
+                if (launchAllSwitch > 6) {
                     follower.followPath(launchToIntake);
                     gateSwitch = 1;
                     setPathState(pathState + 1);
@@ -128,26 +133,26 @@ public class RedBACKAuto extends OpMode {
                 }
                 break;
             case 4:
-                if (gateSwitch > 2 || pathTimer.getElapsedTimeSeconds() > 3) {
+                if (gateSwitch > 2 || pathTimer.getElapsedTimeSeconds() > 2) {
                     follower.followPath(secondIntakingIn);
                     setPathState(pathState + 1);
                 }
                 break;
             case 5:
-                if (gateSwitch > 6 || pathTimer.getElapsedTimeSeconds() > 3) {
+                if (gateSwitch > 6 || pathTimer.getElapsedTimeSeconds() > 2) {
                     follower.followPath(launch);
-                    intake.setPower(-0.3);
                     setPathState(pathState + 1);
                 }
                 break;
             case 6:
                 if (!follower.isBusy()) {
+                    gateSwitch = 0;
                     launchAllSwitch = 1;
                     setPathState(pathState + 1);
                 }
                 break;
             case 7:
-                if (launchAllSwitch == 0) {
+                if (launchAllSwitch > 6) {
                     follower.followPath(launchToIntake);
                     gateSwitch = 1;
                     setPathState(pathState + 1);
@@ -156,15 +161,10 @@ public class RedBACKAuto extends OpMode {
             case 8:
                 if (!follower.isBusy() && pathTimer.getElapsedTimeSeconds() > 2) {
                     follower.followPath(launch);
-                    setPathState(pathState + 1);
+                    setPathState(6);
                 }
                 break;
-            case 9:
-                if (!follower.isBusy()) {
-                    launchAllSwitch = 1;
-                    setPathState(pathState + 1);
-                }
-                break;
+
         }
     }
 
@@ -213,7 +213,7 @@ public class RedBACKAuto extends OpMode {
         turret.setZeroPowerBehavior(BRAKE);
 
         PIDFCoefficients flywheelpidfCoefficients = new PIDFCoefficients(Robot.flyP, Robot.flyI, Robot.flyD, Robot.flyF);
-        PIDFCoefficients spindexpidfCoefficients = new PIDFCoefficients(0.3, 0.05, 0, 5);
+        PIDFCoefficients spindexpidfCoefficients = new PIDFCoefficients(Robot.dexP, Robot.dexI, Robot.dexD, Robot.dexF);
         PIDFCoefficients turretpidCoefficients = new PIDFCoefficients(Robot.turP, Robot.turI, Robot.turD, Robot.turF);
 
         flywheel.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, flywheelpidfCoefficients);
@@ -254,7 +254,7 @@ public class RedBACKAuto extends OpMode {
     }
 
     public void start() {
-
+        opmodeTimer.resetTimer();
     }
 
     public void loop() {
@@ -262,6 +262,15 @@ public class RedBACKAuto extends OpMode {
         autoPathUpdate();
         launchAll();
         autoIntake();
+        if (opmodeTimer.getElapsedTimeSeconds() > 27 && !parkTime) {
+            launchAllSwitch = 0;
+            gateSwitch = 0;
+            aimTurret(0);
+            follower.breakFollowing();
+            follower.holdPoint(park);
+            parkTime = true;
+            setPathState(-1);
+        }
 //         Feedback to Driver Hub for debugging
         telemetry.addData("path state", pathState);
         telemetry.addData("x", follower.getPose().getX());
@@ -284,18 +293,21 @@ public class RedBACKAuto extends OpMode {
     public static void  launchAll() {
         switch (Robot.launchAllSwitch) { //launch all balls
             case 1:
+                if (flywheel.getVelocity() > velocityMin) {
                     transfer.setPosition(Robot.transfer1);
                     runtime.reset();
                     Robot.launchAllSwitch++;
+                }
                 break;
             case 2:
                 if (runtime.milliseconds() > 500) {
                     spin1CW();
+                    runtime.reset();
                     Robot.launchAllSwitch++;
                 }
                 break;
             case 3:
-                if (!spindex.isBusy()) {
+                if (!spindex.isBusy() && flywheel.getVelocity() > velocityMin) {
                     transfer.setPosition(Robot.transfer2);
                     runtime.reset();
                     Robot.launchAllSwitch++;
@@ -304,11 +316,12 @@ public class RedBACKAuto extends OpMode {
             case 4:
                 if (runtime.milliseconds() > 500) {
                     spin1CW();
+                    runtime.reset();
                     Robot.launchAllSwitch++;
                 }
                 break;
             case 5:
-                if (!spindex.isBusy()) {
+                if (!spindex.isBusy() && flywheel.getVelocity() > velocityMin) {
                     transfer.setPosition(Robot.transfer3);
                     runtime.reset();
                     Robot.launchAllSwitch++;
@@ -332,7 +345,7 @@ public class RedBACKAuto extends OpMode {
     public static void autoIntake() {
         switch (Robot.gateSwitch) {
             case 0:
-                intake.setPower(0.0);
+                intake.setPower(-0.3);
                 break;
             case 1:
                 intake.setPower(1.0);
@@ -371,8 +384,7 @@ public class RedBACKAuto extends OpMode {
                 break;
             case 7:
                 if (runtime.seconds() > 2) {
-                    intake.setPower(-0.3);
-                    gateSwitch++;
+                    gateSwitch = 0;
                 }
                 break;
         }
@@ -389,7 +401,7 @@ public class RedBACKAuto extends OpMode {
         }
         spindex.setTargetPosition(spindexPose);
         spindex.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        spindex.setPower(1.0);
+        spindex.setPower(0.8);
     }
     public static void spin2CW(){
         numberOfSpins = numberOfSpins - 2;

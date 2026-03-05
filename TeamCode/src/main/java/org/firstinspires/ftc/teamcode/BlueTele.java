@@ -45,7 +45,9 @@ import com.qualcomm.robotcore.hardware.ColorRangeSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DigitalChannel;
+import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.hardware.IMU;
+import com.qualcomm.robotcore.hardware.NormalizedColorSensor;
 import com.qualcomm.robotcore.hardware.NormalizedRGBA;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.hardware.Servo;
@@ -58,6 +60,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.Position;
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -74,12 +77,19 @@ public class BlueTele extends OpMode {
     static Servo leftKickstand;
     static Servo rightKickstand;
     static Servo hood;
-    static ColorRangeSensor LTcolor;
-    static ColorRangeSensor LBcolor;
-    static ColorRangeSensor BTcolor;
-    static ColorRangeSensor BBcolor;
-    static ColorRangeSensor RTcolor;
-    static ColorRangeSensor RBcolor;
+    static NormalizedColorSensor LTcolor;
+    static NormalizedColorSensor LBcolor;
+    static NormalizedColorSensor BTcolor;
+    static NormalizedColorSensor BBcolor;
+    static NormalizedColorSensor RTcolor;
+    static NormalizedColorSensor RBcolor;
+    static DistanceSensor LTdist;
+    static DistanceSensor LBdist;
+    static DistanceSensor RTdist;
+    static DistanceSensor RBdist;
+    static DistanceSensor BTdist;
+    static DistanceSensor BBdist;
+
     static DcMotorEx spindex;
     static DcMotorEx flywheel;
     static DcMotorEx intake;
@@ -104,6 +114,7 @@ public class BlueTele extends OpMode {
     double llY = 0;
     double llheading = 0;
     boolean holdPosition = false;
+    double driveSpeed = 1.0;
     public Pose savedPose;
     public Pose3D botpose = null;
 
@@ -147,12 +158,19 @@ public class BlueTele extends OpMode {
         rightKickstand = hardwareMap.get(Servo.class, "Rstand");
         hood = hardwareMap.get(Servo.class, "hood");
 
-        LTcolor = hardwareMap.get(ColorRangeSensor.class, "LTcolor");
-        LBcolor = hardwareMap.get(ColorRangeSensor.class, "LBcolor");
-        BTcolor = hardwareMap.get(ColorRangeSensor.class, "BTcolor");
-        BBcolor = hardwareMap.get(ColorRangeSensor.class, "BBcolor");
-        RTcolor = hardwareMap.get(ColorRangeSensor.class, "RTcolor");
-        RBcolor = hardwareMap.get(ColorRangeSensor.class, "RBcolor");
+        LTcolor = hardwareMap.get(NormalizedColorSensor.class, "LTcolor");
+        LBcolor = hardwareMap.get(NormalizedColorSensor.class, "LBcolor");
+        BTcolor = hardwareMap.get(NormalizedColorSensor.class, "BTcolor");
+        BBcolor = hardwareMap.get(NormalizedColorSensor.class, "BBcolor");
+        RTcolor = hardwareMap.get(NormalizedColorSensor.class, "RTcolor");
+        RBcolor = hardwareMap.get(NormalizedColorSensor.class, "RBcolor");
+
+        LTdist = hardwareMap.get(DistanceSensor.class, "LTcolor");
+        LBdist = hardwareMap.get(DistanceSensor.class, "LBcolor");
+        RTdist = hardwareMap.get(DistanceSensor.class, "BTcolor");
+        RBdist = hardwareMap.get(DistanceSensor.class, "BBcolor");
+        BTdist = hardwareMap.get(DistanceSensor.class, "RTcolor");
+        BBdist = hardwareMap.get(DistanceSensor.class, "RBcolor");
 
         spindex = hardwareMap.get(DcMotorEx.class, "spindex");
         flywheel = hardwareMap.get(DcMotorEx.class, "flywheel");
@@ -178,7 +196,7 @@ public class BlueTele extends OpMode {
         spindex.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, spindexpidfCoefficients);
         turret.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         turret.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, turretpidCoefficients);
-        spindex.setTargetPositionTolerance(15);
+        spindex.setTargetPositionTolerance(20);
 
         gate = hardwareMap.get(DigitalChannel.class, "gate");
         gate.setMode(DigitalChannel.Mode.INPUT);
@@ -217,6 +235,20 @@ public class BlueTele extends OpMode {
     @Override
     public void loop() {
         follower.update();
+
+        NormalizedRGBA colors1 = LTcolor.getNormalizedColors();
+        NormalizedRGBA colors2 = LBcolor.getNormalizedColors();
+        NormalizedRGBA colors3 = BTcolor.getNormalizedColors();
+        NormalizedRGBA colors4 = BBcolor.getNormalizedColors();
+        NormalizedRGBA colors5 = RTcolor.getNormalizedColors();
+        NormalizedRGBA colors6 = RBcolor.getNormalizedColors();
+
+        double dist1 = LTdist.getDistance(DistanceUnit.CM);
+        double dist2 = LBdist.getDistance(DistanceUnit.CM);
+        double dist3 = RTdist.getDistance(DistanceUnit.CM);
+        double dist4 = RBdist.getDistance(DistanceUnit.CM);
+        double dist5 = BTdist.getDistance(DistanceUnit.CM);
+        double dist6 = BBdist.getDistance(DistanceUnit.CM);
 
         limelight.updateRobotOrientation(Math.toDegrees(follower.getPose().getHeading()));
         LLResult llResult = limelight.getLatestResult();
@@ -258,13 +290,11 @@ public class BlueTele extends OpMode {
                 holdPosition = false;
             }
             if (gamepad1.left_trigger > 0.1) {
-                follower.setTeleOpDrive((-0.5 * gamepad1.left_stick_y), (-0.5 * gamepad1.left_stick_x), (-0.5 * gamepad1.right_stick_x), true);
-            } else if (gamepad1.left_bumper) {
-                follower.setTeleOpDrive(-gamepad1.left_stick_y, -gamepad1.left_stick_x, -gamepad1.right_stick_x, false);
+                driveSpeed = 0.4;
             } else {
-                follower.setTeleOpDrive(-gamepad1.left_stick_y, -gamepad1.left_stick_x, -gamepad1.right_stick_x, true);
+                driveSpeed = 1.0;
             }
-
+            follower.setTeleOpDrive(driveSpeed * -gamepad1.left_stick_y, driveSpeed * -gamepad1.left_stick_x, driveSpeed * -gamepad1.right_stick_x, !gamepad1.left_bumper);
         }
 
 
@@ -285,9 +315,8 @@ public class BlueTele extends OpMode {
         } else if (Robot.flywheelVelocity < Robot.velocityMin) {
             Robot.flywheelVelocity = Robot.velocityMin;
         }
-
-        Robot.angle1 = Robot.angleA * (Math.pow(Robot.turretDistanceToGoal , 2));
-        Robot.angle2 = Robot.angleB * Robot.turretDistanceToGoal;
+        Robot.angle1 = Robot.angleA * (Math.pow(flywheel.getVelocity() , 2));
+        Robot.angle2 = Robot.angleB * flywheel.getVelocity();
         Robot.hoodAngle = (Robot.angle1 + Robot.angle2 + Robot.angleC);
         if (Robot.hoodAngle < Robot.hoodMax) {
             Robot.hoodAngle = Robot.hoodMax;
@@ -609,7 +638,7 @@ public class BlueTele extends OpMode {
 
 //        telemetry.addData("result", llResult);
 
-        telemetry.update();
+//        telemetry.update();
 
     }
 

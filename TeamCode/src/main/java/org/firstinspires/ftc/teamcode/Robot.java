@@ -39,6 +39,9 @@ import org.firstinspires.ftc.teamcode.ABSEncoder;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 
+import java.math.BigDecimal;
+
+
 @Configurable
 public class Robot {
     static double xPoseFromAuto = 0;
@@ -48,18 +51,18 @@ public class Robot {
     static double flyI = 0;
     static double flyD = 0;
     static double flyF = 13.1;
-    static double dexP = 0.3;
-    static double dexI = 0.01;
-    static double dexD = 0.0000;
-    static double dexF = 5;
+    static double dexP = 1.7;
+    static double dexI = 0.0;
+    static double dexD = 0.05;
+    static double dexF = 5.5;
     static double turP = 0.6;
     static double turI = 0.001;
     static double turD = 0.000001;
     static double turF = 4;
     static double lkRaised = 0.0;
-    static double lkLowered = 0.8;
+    static double lkLowered = 0.81;
     static double rkRaised = 1.0;
-    static double rkLowered = 0.2;
+    static double rkLowered = 0.25;
     static double transferRest = 0.488;
     static double transfer1 = 0.408;
     static double transfer2 = 0.336;
@@ -77,9 +80,9 @@ public class Robot {
     static double xTurretPose;
     static double yTurretPose;
     static double turretDistanceToGoal;
-    static int xBlueGoal = 7;
-    static int xRedGoal = 137;
-    static int yGoal = 137;
+    static int xBlueGoal = 12;
+    static int xRedGoal = 132;
+    static int yGoal = 132;
     static double velocityA = 0.0110641;
     static double velocityB = 6.11461;
     static double velocityC = 1380.89071;
@@ -88,9 +91,9 @@ public class Robot {
     static int velocityMax = 2400;
     static int velocityMin = 1500;
     static int flywheelVelocity;
-    static double angleA = 0.0000218802;
-    static double angleB = -0.00827392;
-    static double angleC = 0.919846;
+    static double angleA = 6.84614E-7;
+    static double angleB = -0.00327091;
+    static double angleC = 4.16634;
     static double angle1;
     static double angle2;
     static double hoodMax = 0.0;

@@ -27,6 +27,8 @@ import static org.firstinspires.ftc.teamcode.Robot.xTurretPose;
 import static org.firstinspires.ftc.teamcode.Robot.yGoal;
 import static org.firstinspires.ftc.teamcode.Robot.yPoseFromAuto;
 import static org.firstinspires.ftc.teamcode.Robot.yTurretPose;
+import com.qualcomm.hardware.lynx.LynxModule;
+
 
 import com.bylazar.panels.Panels;
 import com.pedropathing.follower.Follower;
@@ -42,6 +44,8 @@ import com.qualcomm.robotcore.hardware.ColorRangeSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DigitalChannel;
+import com.qualcomm.robotcore.hardware.DistanceSensor;
+import com.qualcomm.robotcore.hardware.NormalizedColorSensor;
 import com.qualcomm.robotcore.hardware.NormalizedRGBA;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.hardware.Servo;
@@ -67,12 +71,18 @@ public class RedTele extends OpMode {
     static Servo leftKickstand;
     static Servo rightKickstand;
     static Servo hood;
-    static ColorRangeSensor LTcolor;
-    static ColorRangeSensor LBcolor;
-    static ColorRangeSensor BTcolor;
-    static ColorRangeSensor BBcolor;
-    static ColorRangeSensor RTcolor;
-    static ColorRangeSensor RBcolor;
+    static NormalizedColorSensor LTcolor;
+    static NormalizedColorSensor LBcolor;
+    static NormalizedColorSensor BTcolor;
+    static NormalizedColorSensor BBcolor;
+    static NormalizedColorSensor RTcolor;
+    static NormalizedColorSensor RBcolor;
+    static DistanceSensor LTdist;
+    static DistanceSensor LBdist;
+    static DistanceSensor RTdist;
+    static DistanceSensor RBdist;
+    static DistanceSensor BTdist;
+    static DistanceSensor BBdist;
     static DcMotorEx spindex;
     static DcMotorEx flywheel;
     static DcMotorEx intake;
@@ -88,27 +98,15 @@ public class RedTele extends OpMode {
     private Follower follower;
     private TelemetryManager telemetryM;
     ElapsedTime runtime = new ElapsedTime();
+    ElapsedTime loopTime = new ElapsedTime();
     double currentTurretAngle = 0;
     double deltaTargetAngle = 0;
     double lastTurretAngle = 0;
     double totalTurretAngle = 0;
     int turretEncoder = 0;
+    double driveSpeed = 1.0;
     boolean holdPosition = false;
     public Pose savedPose;
-
-
-//    NormalizedRGBA colors1 = LTcolor.getNormalizedColors();
-//    NormalizedRGBA colors2 = LBcolor.getNormalizedColors();
-//    NormalizedRGBA colors3 = BTcolor.getNormalizedColors();
-//    NormalizedRGBA colors4 = BBcolor.getNormalizedColors();
-//    NormalizedRGBA colors5 = RTcolor.getNormalizedColors();
-//    NormalizedRGBA colors6 = RBcolor.getNormalizedColors();
-//    float hue1 = JavaUtil.colorToHue(colors1.toColor());
-//    float hue2 = JavaUtil.colorToHue(colors2.toColor());
-//    float hue3 = JavaUtil.colorToHue(colors3.toColor());
-//    float hue4 = JavaUtil.colorToHue(colors4.toColor());
-//    float hue5 = JavaUtil.colorToHue(colors5.toColor());
-//    float hue6 = JavaUtil.colorToHue(colors6.toColor());
 
     public enum spindexPosition {
         LEFT,
@@ -120,8 +118,9 @@ public class RedTele extends OpMode {
         GREEN,
         NONE
     }
-
+     List<LynxModule> allHubs;
     List<String> queue = new ArrayList<>();
+
 
     @Override
     public void init() {
@@ -130,10 +129,10 @@ public class RedTele extends OpMode {
         follower.update();
         telemetryM = PanelsTelemetry.INSTANCE.getTelemetry();
 
-        leftFrontDrive = hardwareMap.get(DcMotor.class, "fl");
-        rightFrontDrive = hardwareMap.get(DcMotor.class, "fr");
-        leftBackDrive = hardwareMap.get(DcMotor.class, "bl");
-        rightBackDrive = hardwareMap.get(DcMotor.class, "br");
+        leftFrontDrive = hardwareMap.get(DcMotorEx.class, "fl");
+        rightFrontDrive = hardwareMap.get(DcMotorEx.class, "fr");
+        leftBackDrive = hardwareMap.get(DcMotorEx.class, "bl");
+        rightBackDrive = hardwareMap.get(DcMotorEx.class, "br");
 
         leftFrontDrive.setZeroPowerBehavior(BRAKE);
         rightFrontDrive.setZeroPowerBehavior(BRAKE);
@@ -145,12 +144,19 @@ public class RedTele extends OpMode {
         rightKickstand = hardwareMap.get(Servo.class, "Rstand");
         hood = hardwareMap.get(Servo.class, "hood");
 
-        LTcolor = hardwareMap.get(ColorRangeSensor.class, "LTcolor");
-        LBcolor = hardwareMap.get(ColorRangeSensor.class, "LBcolor");
-        BTcolor = hardwareMap.get(ColorRangeSensor.class, "BTcolor");
-        BBcolor = hardwareMap.get(ColorRangeSensor.class, "BBcolor");
-        RTcolor = hardwareMap.get(ColorRangeSensor.class, "RTcolor");
-        RBcolor = hardwareMap.get(ColorRangeSensor.class, "RBcolor");
+        LTcolor = hardwareMap.get(NormalizedColorSensor.class, "LTcolor");
+        LBcolor = hardwareMap.get(NormalizedColorSensor.class, "LBcolor");
+        BTcolor = hardwareMap.get(NormalizedColorSensor.class, "BTcolor");
+        BBcolor = hardwareMap.get(NormalizedColorSensor.class, "BBcolor");
+        RTcolor = hardwareMap.get(NormalizedColorSensor.class, "RTcolor");
+        RBcolor = hardwareMap.get(NormalizedColorSensor.class, "RBcolor");
+
+        LTdist = hardwareMap.get(DistanceSensor.class, "LTcolor");
+        LBdist = hardwareMap.get(DistanceSensor.class, "LBcolor");
+        RTdist = hardwareMap.get(DistanceSensor.class, "BTcolor");
+        RBdist = hardwareMap.get(DistanceSensor.class, "BBcolor");
+        BTdist = hardwareMap.get(DistanceSensor.class, "RTcolor");
+        BBdist = hardwareMap.get(DistanceSensor.class, "RBcolor");
 
         spindex = hardwareMap.get(DcMotorEx.class, "spindex");
         flywheel = hardwareMap.get(DcMotorEx.class, "flywheel");
@@ -176,7 +182,7 @@ public class RedTele extends OpMode {
         spindex.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, spindexpidfCoefficients);
         turret.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         turret.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, turretpidCoefficients);
-        spindex.setTargetPositionTolerance(15);
+        spindex.setTargetPositionTolerance(20);
 
         gate = hardwareMap.get(DigitalChannel.class, "gate");
         gate.setMode(DigitalChannel.Mode.INPUT);
@@ -185,6 +191,11 @@ public class RedTele extends OpMode {
 
         limelight = hardwareMap.get(Limelight3A.class, "limelight");
         limelight.pipelineSwitch(3);
+
+        allHubs = hardwareMap.getAll(LynxModule.class);
+        for (LynxModule hub : allHubs) {
+            hub.setBulkCachingMode(LynxModule.BulkCachingMode.MANUAL);
+        }
     }
 
     @Override
@@ -207,18 +218,43 @@ public class RedTele extends OpMode {
         runtime.reset();
     }
 
+
+
+
     @Override
     public void loop() {
+        for (LynxModule hub : allHubs){
+            hub.clearBulkCache();
+        }
+
         follower.update();
+
+
+        //Read Sensors
+
+
 //        LLResult llResult = limelight.getLatestResult();
 
-
+//        NormalizedRGBA colors1 = LTcolor.getNormalizedColors();
+//        NormalizedRGBA colors2 = LBcolor.getNormalizedColors();
+//        NormalizedRGBA colors3 = BTcolor.getNormalizedColors();
+//        NormalizedRGBA colors4 = BBcolor.getNormalizedColors();
+//        NormalizedRGBA colors5 = RTcolor.getNormalizedColors();
+//        NormalizedRGBA colors6 = RBcolor.getNormalizedColors();
+//
+//        double dist1 = LTdist.getDistance(DistanceUnit.CM);
+//        double dist2 = LBdist.getDistance(DistanceUnit.CM);
+//        double dist3 = RTdist.getDistance(DistanceUnit.CM);
+//        double dist4 = RBdist.getDistance(DistanceUnit.CM);
+//        double dist5 = BTdist.getDistance(DistanceUnit.CM);
+//        double dist6 = BBdist.getDistance(DistanceUnit.CM);
 
         //Relocalise (not cam yet)
         if (gamepad1.yWasPressed() && gamepad1.dpadUpWasPressed()) {
             follower.setPose(new Pose(7.54, 8.83,0));
         }
 
+        //Drive
         if (gamepad1.right_trigger > 0.1) {
             if (!holdPosition) {
                 follower.breakFollowing();
@@ -232,13 +268,11 @@ public class RedTele extends OpMode {
                 holdPosition = false;
             }
             if (gamepad1.left_trigger > 0.1) {
-                follower.setTeleOpDrive((-0.5 * gamepad1.left_stick_y), (-0.5 * gamepad1.left_stick_x), (-0.5 * gamepad1.right_stick_x), true);
-            } else if (gamepad1.left_bumper) {
-                follower.setTeleOpDrive(-gamepad1.left_stick_y, -gamepad1.left_stick_x, -gamepad1.right_stick_x, false);
+                driveSpeed = 0.4;
             } else {
-                follower.setTeleOpDrive(-gamepad1.left_stick_y, -gamepad1.left_stick_x, -gamepad1.right_stick_x, true);
+                driveSpeed = 1.0;
             }
-
+            follower.setTeleOpDrive(driveSpeed * -gamepad1.left_stick_y, driveSpeed * -gamepad1.left_stick_x, driveSpeed * -gamepad1.right_stick_x, !gamepad1.left_bumper);
         }
 
         //Calculations
@@ -258,14 +292,16 @@ public class RedTele extends OpMode {
             Robot.flywheelVelocity = Robot.velocityMin;
         }
 
-        Robot.angle1 = Robot.angleA * (Math.pow(Robot.turretDistanceToGoal , 2));
-        Robot.angle2 = Robot.angleB * Robot.turretDistanceToGoal;
+        Robot.angle1 = Robot.angleA * (Math.pow(flywheel.getVelocity() , 2));
+        Robot.angle2 = Robot.angleB * flywheel.getVelocity();
         Robot.hoodAngle = (Robot.angle1 + Robot.angle2 + Robot.angleC);
         if (Robot.hoodAngle < Robot.hoodMax) {
             Robot.hoodAngle = Robot.hoodMax;
         } else if (Robot.hoodAngle > Robot.hoodMin) {
             Robot.hoodAngle = Robot.hoodMin;
         }
+
+
 
         currentTurretAngle = Math.atan2((yGoal - yTurretPose),(xRedGoal - xTurretPose)) - robotHeading;
         deltaTargetAngle = currentTurretAngle - lastTurretAngle;
@@ -295,16 +331,20 @@ public class RedTele extends OpMode {
         //Flywheel
         if (gamepad2.left_bumper) {
             Robot.flywheelOn = true;
+//            PIDFCoefficients flywheelpidfCoefficients = new PIDFCoefficients(Robot.flyP, Robot.flyI, Robot.flyD, Robot.flyF);
+//            flywheel.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, flywheelpidfCoefficients);
         } else if (gamepad2.right_bumper) {
             Robot.flywheelOn = false;
+            PIDFCoefficients spindexpidfCoefficients = new PIDFCoefficients(Robot.dexP, Robot.dexI, Robot.dexD, Robot.dexF);
+            spindex.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, spindexpidfCoefficients);
+            PIDFCoefficients turretpidCoefficients = new PIDFCoefficients(Robot.turP, Robot.turI, Robot.turD, Robot.turF);
+            turret.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, turretpidCoefficients);
         }
         if (!Robot.flywheelOn) {
             flywheel.setVelocity(0.0);
         } else if (ejectSwitch == 0){
             flywheel.setVelocity(flywheelVelocity);
         }
-
-
 
         //Intake
         if (gamepad2.left_trigger > 0.1) {
@@ -526,18 +566,18 @@ public class RedTele extends OpMode {
 //        }
 
         // Telemetry
-        telemetryM.debug("current", currentTurretAngle);
-        telemetryM.debug("delta", deltaTargetAngle);
-        telemetryM.debug("total", totalTurretAngle);
-        telemetryM.debug("encoder", turretEncoder);
-
-//        telemetry.addData("# of balls", Robot.numberOfBalls);
-        telemetry.addData("hood angle", Robot.hoodAngle);
-        telemetry.addData("flywheel velocity", flywheelVelocity);
-        telemetry.addData("turret distance to goal", turretDistanceToGoal);
-        telemetry.addData("total turret angle", totalTurretAngle);
-        telemetry.addData("turret encoder", turretEncoder);
-//        telemetry.addData("llresult", llResult.isValid());
+//        telemetryM.debug("current", currentTurretAngle);
+//        telemetryM.debug("delta", deltaTargetAngle);
+//        telemetryM.debug("total", totalTurretAngle);
+//        telemetryM.debug("encoder", turretEncoder);
+//
+////        telemetry.addData("# of balls", Robot.numberOfBalls);
+//        telemetry.addData("hood angle", Robot.hoodAngle);
+//        telemetry.addData("flywheel velocity", flywheelVelocity);
+//        telemetry.addData("turret distance to goal", turretDistanceToGoal);
+//        telemetry.addData("total turret angle", totalTurretAngle);
+//        telemetry.addData("turret encoder", turretEncoder);
+////        telemetry.addData("llresult", llResult.isValid());
 //        telemetry.addData("distance", RBcolor.getDistance(DistanceUnit.CM));
 //        telemetry.addData("Color", RBcolor.getNormalizedColors());
 //        telemetry.addData("RBG", RBcolor.green());
@@ -551,11 +591,14 @@ public class RedTele extends OpMode {
 //
 //        telemetryM.debug(currentTurretAngle);
 //
-        telemetryM.debug("distance", turretDistanceToGoal);
-        telemetryM.update();
-//
-        telemetry.update();
+//        telemetryM.debug("distance", turretDistanceToGoal);
+        while (loopTime.milliseconds() < 30) {
 
+        }
+        telemetryM.addData("loop time", loopTime.milliseconds());
+        telemetryM.update();
+
+        loopTime.reset();
     }
 
     public static void spin1CCW(){
@@ -568,7 +611,7 @@ public class RedTele extends OpMode {
         }
         spindex.setTargetPosition(spindexPose);
         spindex.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        spindex.setPower(1.0);
+        spindex.setPower(0.8);
     }
     public static void spin2CCW(){
         numberOfSpins = numberOfSpins + 2;
@@ -593,7 +636,7 @@ public class RedTele extends OpMode {
         }
         spindex.setTargetPosition(spindexPose);
         spindex.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        spindex.setPower(1.0);
+        spindex.setPower(0.8);
     }
     public static void spin2CW(){
         numberOfSpins = numberOfSpins - 2;
