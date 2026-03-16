@@ -32,12 +32,12 @@ import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 @Autonomous(name = "RED BACK Auto", group = "Auto",  preselectTeleOp= "RedTele")
 
 public class RedBACKAuto extends OpMode {
-    static int Motif = 1; //1=GPP 2=PGP 3=PPG
-    static int turretAnglePreload = -20;
-    static int turretAngleIntake = 72;
-    static double hoodPosition = 0.3;
-    static double flywheelVelocity = 2300;
-    static double velocityMin = flywheelVelocity - 70;
+     int Motif = 1; //1=GPP 2=PGP 3=PPG
+     double hoodPosition = 0.25;
+     double flywheelVelocity = 2300;
+     double velocityMin = flywheelVelocity - 100;
+    int turretOffset = 0;
+    int spindexOffset = 0;
     boolean parkTime = false;
 
     Robot robot = new Robot();
@@ -63,13 +63,13 @@ public class RedBACKAuto extends OpMode {
     static DcMotorEx intake;
     static DcMotorEx turret;
     static DigitalChannel gate;
-    static AnalogInput ABSturret;
-    static AnalogInput ABSspindex;
+    static AnalogInput absTurret;
+    static AnalogInput absSpindex;
 
     private final Pose startPose = new Pose(88, 7.54, Math.toRadians(90));
     private final Pose launchPosition = new Pose(88, 20, Math.toRadians(0));
     private final Pose lineUpPose = new Pose(92, 10, Math.toRadians(0));
-    private final Pose intakeIn = new Pose(131.5, 10, Math.toRadians(0));
+    private final Pose intakeIn = new Pose(129.5, 10, Math.toRadians(0));
     private final Pose intakeOut = new Pose(126, 10, Math.toRadians(0));
     private final Pose park = new Pose(110, 20, Math.toRadians(0));
     private PathChain launchToIntake;
@@ -106,15 +106,15 @@ public class RedBACKAuto extends OpMode {
                 follower.setMaxPower(0.9);
                 flywheel.setVelocity(flywheelVelocity);
                 hood.setPosition(hoodPosition);
-                spindex.setTargetPosition(0);
+                spindex.setTargetPosition(-spindexOffset);
                 spindex.setMode(DcMotor.RunMode.RUN_TO_POSITION);
                 spindex.setPower(1.0);
-                aimTurret(69);
+                aimTurret(66);
                 follower.followPath(launchPreload);
                 setPathState(pathState + 1);
                 break;
             case 1:
-                if (!follower.isBusy() && (flywheel.getVelocity() > (flywheelVelocity - 60))) {
+                if (!follower.isBusy() && (flywheel.getVelocity() > velocityMin)) {
                     launchAllSwitch = 1;
                     setPathState(pathState + 1);
                 }
@@ -223,12 +223,12 @@ public class RedBACKAuto extends OpMode {
         turret.setTargetPosition(0);
         turret.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, turretpidCoefficients);
         turret.setPower(1.0);
-        spindex.setTargetPositionTolerance(15);
+        spindex.setTargetPositionTolerance(20);
 
         gate = hardwareMap.get(DigitalChannel.class, "gate");
         gate.setMode(DigitalChannel.Mode.INPUT);
-        ABSturret = hardwareMap.get(AnalogInput.class, "ABSturret");
-        ABSspindex = hardwareMap.get(AnalogInput.class, "ABSspindex");
+        absTurret = hardwareMap.get(AnalogInput.class, "ABSturret");
+        absSpindex = hardwareMap.get(AnalogInput.class, "ABSspindex");
 
         pathTimer = new Timer();
         opmodeTimer = new Timer();
@@ -254,6 +254,9 @@ public class RedBACKAuto extends OpMode {
     }
 
     public void start() {
+        spindexOffset = (int) ( ((absSpindex.getVoltage() / 3.3) * 4000) + 60);
+        turretOffset  = (int) ( ((absTurret.getVoltage() / 3.3) * 4000) - 2550);
+
         opmodeTimer.resetTimer();
     }
 
@@ -279,6 +282,7 @@ public class RedBACKAuto extends OpMode {
         telemetry.addData("velocity", flywheel.getVelocity());
         telemetry.addData("turret", turret.isBusy());
         telemetry.addData("follower", follower.isBusy());
+
         telemetry.update();
 
     }
@@ -290,7 +294,7 @@ public class RedBACKAuto extends OpMode {
     }
 
 
-    public static void  launchAll() {
+    public  void  launchAll() {
         switch (Robot.launchAllSwitch) { //launch all balls
             case 1:
                 if (flywheel.getVelocity() > velocityMin) {
@@ -342,7 +346,7 @@ public class RedBACKAuto extends OpMode {
         }
     }
 
-    public static void autoIntake() {
+    public  void autoIntake() {
         switch (Robot.gateSwitch) {
             case 0:
                 intake.setPower(-0.3);
@@ -388,9 +392,12 @@ public class RedBACKAuto extends OpMode {
                 }
                 break;
         }
+
+
+
     }
 
-    public static void spin1CW(){
+    public  void spin1CW(){
 
         numberOfSpins--;
         spindexPose = spindexPose - 1333;
@@ -399,11 +406,11 @@ public class RedBACKAuto extends OpMode {
         } else if (numberOfSpins % 3 == 0) {
             spindexPose--;
         }
-        spindex.setTargetPosition(spindexPose);
+        spindex.setTargetPosition(spindexPose - spindexOffset);
         spindex.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         spindex.setPower(0.8);
     }
-    public static void spin2CW(){
+    public  void spin2CW(){
         numberOfSpins = numberOfSpins - 2;
         spindexPose = spindexPose - 2666;
         if (numberOfSpins == 0) {
@@ -411,14 +418,14 @@ public class RedBACKAuto extends OpMode {
         } else if (numberOfSpins % 3 == 0) {
             spindexPose--;
         }
-        spindex.setTargetPosition(spindexPose);
+        spindex.setTargetPosition(spindexPose - spindexOffset);
         spindex.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         spindex.setPower(1.0);
     }
 
-    public static void aimTurret(double turretPose) {
+    public  void aimTurret(double turretPose) {
         angle = (int) (((turretPose) /360) * 13332);
-        turret.setTargetPosition(angle);
+        turret.setTargetPosition(angle - turretOffset);
         turret.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         turret.setPower(1.0);
     }

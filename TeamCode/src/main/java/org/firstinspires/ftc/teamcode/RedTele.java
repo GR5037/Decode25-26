@@ -88,8 +88,8 @@ public class RedTele extends OpMode {
     static DcMotorEx intake;
     static DcMotorEx turret;
     static DigitalChannel gate;
-    static AnalogInput ABSturret;
-    static AnalogInput ABSspindex;
+    static AnalogInput absTurret;
+    static AnalogInput absSpindex;
     static double leftFrontPower;
     static double rightFrontPower;
     static double leftBackPower;
@@ -186,8 +186,8 @@ public class RedTele extends OpMode {
 
         gate = hardwareMap.get(DigitalChannel.class, "gate");
         gate.setMode(DigitalChannel.Mode.INPUT);
-        ABSturret = hardwareMap.get(AnalogInput.class, "ABSturret");
-        ABSspindex = hardwareMap.get(AnalogInput.class, "ABSspindex");
+        absTurret = hardwareMap.get(AnalogInput.class, "ABSturret");
+        absSpindex = hardwareMap.get(AnalogInput.class, "ABSspindex");
 
         limelight = hardwareMap.get(Limelight3A.class, "limelight");
         limelight.pipelineSwitch(3);
@@ -214,12 +214,10 @@ public class RedTele extends OpMode {
         Robot.gateSwitch = 0;
         Robot.spindexPose = 0;
         Robot.flywheelOn = true;
+        follower.setStartingPose(new Pose(xPoseFromAuto, yPoseFromAuto, headingFromAuto));
         follower.startTeleOpDrive(true);
         runtime.reset();
     }
-
-
-
 
     @Override
     public void loop() {
@@ -292,8 +290,8 @@ public class RedTele extends OpMode {
             Robot.flywheelVelocity = Robot.velocityMin;
         }
 
-        Robot.angle1 = Robot.angleA * (Math.pow(flywheel.getVelocity() , 2));
-        Robot.angle2 = Robot.angleB * flywheel.getVelocity();
+        Robot.angle1 = Robot.angleA * (Math.pow(flywheelVelocity , 2));
+        Robot.angle2 = Robot.angleB * flywheelVelocity;
         Robot.hoodAngle = (Robot.angle1 + Robot.angle2 + Robot.angleC);
         if (Robot.hoodAngle < Robot.hoodMax) {
             Robot.hoodAngle = Robot.hoodMax;
@@ -364,7 +362,7 @@ public class RedTele extends OpMode {
                     }
                     break;
                 case 2:
-                    if (gate.getState() && !spindex.isBusy()) {
+                    if (gate.getState()) {
                         Robot.gateSwitch++;
                     }
                     break;
@@ -377,7 +375,7 @@ public class RedTele extends OpMode {
                     }
                     break;
                 case 4:
-                    if (gate.getState() && !spindex.isBusy()) {
+                    if (gate.getState()) {
                         Robot.gateSwitch++;
                     }
                     break;
@@ -428,12 +426,6 @@ public class RedTele extends OpMode {
                 break;
             case 2:
                 if (runtime.milliseconds() > Robot.transferOneTime) {
-//                    spin1CW();
-                    Robot.launchOneSwitch++;
-                }
-                break;
-            case 3:
-                if (spindex.isBusy()) {
                     Robot.launchOneSwitch = 0;
                 }
                 break;
@@ -457,7 +449,7 @@ public class RedTele extends OpMode {
                 }
                 break;
             case 2:
-                if (!spindex.isBusy()) {
+                if (!spindex.isBusy() && flywheel.getVelocity() > flywheelVelocity - 100) {
                     transfer.setPosition(Robot.transfer2);
                     if (Robot.numberOfBalls > 0) {
                         Robot.numberOfBalls--;
@@ -473,7 +465,7 @@ public class RedTele extends OpMode {
                 }
                 break;
             case 4:
-                if (!spindex.isBusy()) {
+                if (!spindex.isBusy() && flywheel.getVelocity() > flywheelVelocity - 100) {
                     transfer.setPosition(Robot.transfer3);
                     if (Robot.numberOfBalls > 0) {
                         Robot.numberOfBalls--;
@@ -544,6 +536,7 @@ public class RedTele extends OpMode {
                 if (gamepad2.dpadDownWasPressed()) {
                     leftKickstand.setPosition(Robot.lkLowered);
                     rightKickstand.setPosition(Robot.rkLowered);
+                    flywheelOn = false;
                     Robot.kickstandSwitch++;
                 }
                 break;
@@ -551,13 +544,11 @@ public class RedTele extends OpMode {
                 if (gamepad2.dpadDownWasPressed()) {
                     leftKickstand.setPosition(Robot.lkRaised);
                     rightKickstand.setPosition(Robot.rkRaised);
+                    flywheelOn = true;
                     Robot.kickstandSwitch = 0;
                 }
                 break;
         }
-
-
-
 //        if (gamepad2.xWasPressed()){
 //            queuePurple();
 //        }
@@ -595,8 +586,8 @@ public class RedTele extends OpMode {
         while (loopTime.milliseconds() < 30) {
 
         }
-        telemetryM.addData("loop time", loopTime.milliseconds());
-        telemetryM.update();
+//        telemetryM.addData("loop time", loopTime.milliseconds());
+//        telemetryM.update();
 
         loopTime.reset();
     }

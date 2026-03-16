@@ -30,9 +30,9 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 
-@Autonomous(name = "BLUE BACK Auto", group = "Auto",  preselectTeleOp= "BlueTele")
+@Autonomous(name = "OLD BLUE BACK Auto", group = "Auto",  preselectTeleOp= "BlueTele")
 
-public class BlueBACKAuto extends OpMode {
+public class OldBlueBACKAuto extends OpMode {
     int Motif = 1; //1=GPP 2=PGP 3=PPG
     double hoodPosition = 0.25;
     double flywheelVelocity = 2300;
@@ -99,6 +99,9 @@ public class BlueBACKAuto extends OpMode {
 
         launch = new Path(new BezierLine(intakeIn, launchPosition));
         launch.setConstantHeadingInterpolation(launchPosition.getHeading());
+
+        parkpath = new Path(new BezierLine(intakeIn, park));
+        parkpath.setConstantHeadingInterpolation(park.getHeading());
     }
 
     public void autoPathUpdate() {
@@ -162,7 +165,28 @@ public class BlueBACKAuto extends OpMode {
             case 8:
                 if (!follower.isBusy() && pathTimer.getElapsedTimeSeconds() > 2) {
                     follower.followPath(launch);
-                    setPathState(6);
+                    setPathState(pathState + 1);
+                }
+                break;
+            case 9:
+                if (!follower.isBusy()) {
+                    gateSwitch = 0;
+                    launchAllSwitch = 1;
+                    setPathState(pathState + 1);
+                }
+                break;
+            case 10:
+                if (launchAllSwitch > 6) {
+                    follower.followPath(launchToIntake);
+                    gateSwitch = 1;
+                    setPathState(pathState + 1);
+                }
+                break;
+            case 11:
+                if (!follower.isBusy() && pathTimer.getElapsedTimeSeconds() > 2) {
+                    follower.followPath(parkpath);
+                    aimTurret(0);
+                    setPathState(pathState + 1);
                 }
                 break;
 
@@ -266,15 +290,15 @@ public class BlueBACKAuto extends OpMode {
         autoPathUpdate();
         launchAll();
         autoIntake();
-        if (opmodeTimer.getElapsedTimeSeconds() > 27 && !parkTime) {
-            launchAllSwitch = 0;
-            gateSwitch = 0;
-            aimTurret(0);
-            follower.breakFollowing();
-            follower.holdPoint(park);
-            parkTime = true;
-            setPathState(-1);
-        }
+//        if (opmodeTimer.getElapsedTimeSeconds() > 27 && !parkTime) {
+//            launchAllSwitch = 0;
+//            gateSwitch = 0;
+//            aimTurret(180);
+//            buildPaths();
+//           follower.followPath(parkpath);
+//            parkTime = true;
+//            setPathState(-1);
+//        }
 //         Feedback to Driver Hub for debugging
         telemetry.addData("path state", pathState);
         telemetry.addData("x", follower.getPose().getX());
@@ -421,7 +445,7 @@ public class BlueBACKAuto extends OpMode {
         }
         spindex.setTargetPosition(spindexPose - spindexOffset);
         spindex.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        spindex.setPower(1.0);
+        spindex.setPower(0.8);
     }
 
     public  void aimTurret(double turretPose) {

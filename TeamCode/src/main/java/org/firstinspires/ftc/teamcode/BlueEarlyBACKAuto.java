@@ -32,7 +32,7 @@ import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 
 @Autonomous(name = "BLUE BACK Auto", group = "Auto",  preselectTeleOp= "BlueTele")
 
-public class BlueBACKAuto extends OpMode {
+public class BlueEarlyBACKAuto extends OpMode {
     int Motif = 1; //1=GPP 2=PGP 3=PPG
     double hoodPosition = 0.25;
     double flywheelVelocity = 2300;
@@ -64,7 +64,7 @@ public class BlueBACKAuto extends OpMode {
     static DcMotorEx intake;
     static DcMotorEx turret;
     static DigitalChannel gate;
-    static AnalogInput absTurret;
+    static AnalogInput absTurret; 
     static AnalogInput absSpindex;
 
     private final Pose startPose = new Pose(56, 7.54, Math.toRadians(90));
@@ -72,7 +72,7 @@ public class BlueBACKAuto extends OpMode {
     private final Pose lineUpPose = new Pose(52, 10, Math.toRadians(180));
     private final Pose intakeIn = new Pose(14.5, 10, Math.toRadians(180));
     private final Pose intakeOut = new Pose(18, 10, Math.toRadians(180));
-    private final Pose park = new Pose(34, 20, Math.toRadians(0));
+    private final Pose park = new Pose(16, 10, Math.toRadians(180));
     private PathChain launchToIntake;
     private Path  launchPreload,  intakingOut, secondIntakingIn, launch, parkpath;
     private Follower follower;
@@ -99,6 +99,9 @@ public class BlueBACKAuto extends OpMode {
 
         launch = new Path(new BezierLine(intakeIn, launchPosition));
         launch.setConstantHeadingInterpolation(launchPosition.getHeading());
+
+        parkpath = new Path(new BezierLine(intakeIn,park));
+        parkpath.setConstantHeadingInterpolation(Math.toRadians(180));
     }
 
     public void autoPathUpdate() {
@@ -141,31 +144,11 @@ public class BlueBACKAuto extends OpMode {
                 break;
             case 5:
                 if (gateSwitch > 6 || pathTimer.getElapsedTimeSeconds() > 2) {
-                    follower.followPath(launch);
+                    follower.followPath(parkpath);
+                    aimTurret(0);
                     setPathState(pathState + 1);
                 }
                 break;
-            case 6:
-                if (!follower.isBusy()) {
-                    gateSwitch = 0;
-                    launchAllSwitch = 1;
-                    setPathState(pathState + 1);
-                }
-                break;
-            case 7:
-                if (launchAllSwitch > 6) {
-                    follower.followPath(launchToIntake);
-                    gateSwitch = 1;
-                    setPathState(pathState + 1);
-                }
-                break;
-            case 8:
-                if (!follower.isBusy() && pathTimer.getElapsedTimeSeconds() > 2) {
-                    follower.followPath(launch);
-                    setPathState(6);
-                }
-                break;
-
         }
     }
 
@@ -266,15 +249,15 @@ public class BlueBACKAuto extends OpMode {
         autoPathUpdate();
         launchAll();
         autoIntake();
-        if (opmodeTimer.getElapsedTimeSeconds() > 27 && !parkTime) {
-            launchAllSwitch = 0;
-            gateSwitch = 0;
-            aimTurret(0);
-            follower.breakFollowing();
-            follower.holdPoint(park);
-            parkTime = true;
-            setPathState(-1);
-        }
+//        if (opmodeTimer.getElapsedTimeSeconds() > 27 && !parkTime) {
+//            launchAllSwitch = 0;
+//            gateSwitch = 0;
+//            aimTurret(0);
+//            follower.breakFollowing();
+//            follower.holdPoint(park);
+//            parkTime = true;
+//            setPathState(-1);
+//        }
 //         Feedback to Driver Hub for debugging
         telemetry.addData("path state", pathState);
         telemetry.addData("x", follower.getPose().getX());
