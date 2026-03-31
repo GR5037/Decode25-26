@@ -7,8 +7,11 @@ import static org.firstinspires.ftc.teamcode.Robot.gateSwitch;
 import static org.firstinspires.ftc.teamcode.Robot.launchAllSwitch;
 import static org.firstinspires.ftc.teamcode.Robot.numberOfSpins;
 import static org.firstinspires.ftc.teamcode.Robot.spindexPose;
+import com.bylazar.telemetry.PanelsTelemetry;
 import static java.lang.Thread.sleep;
 
+import com.bylazar.telemetry.PanelsTelemetry;
+import com.bylazar.telemetry.TelemetryManager;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.BezierCurve;
 import com.pedropathing.geometry.BezierLine;
@@ -65,12 +68,13 @@ public class RedBACKAuto extends OpMode {
     static DigitalChannel gate;
     static AnalogInput absTurret;
     static AnalogInput absSpindex;
+    private TelemetryManager telemetryM;
 
     private final Pose startPose = new Pose(88, 7.54, Math.toRadians(90));
     private final Pose launchPosition = new Pose(88, 20, Math.toRadians(0));
     private final Pose lineUpPose = new Pose(92, 10, Math.toRadians(0));
-    private final Pose intakeIn = new Pose(129.5, 10, Math.toRadians(0));
-    private final Pose intakeOut = new Pose(126, 10, Math.toRadians(0));
+    private final Pose intakeIn = new Pose(132, 10, Math.toRadians(0));
+    private final Pose intakeOut = new Pose(127, 10, Math.toRadians(0));
     private final Pose park = new Pose(110, 20, Math.toRadians(0));
     private PathChain launchToIntake;
     private Path  launchPreload,  intakingOut, secondIntakingIn, launch;
@@ -103,7 +107,7 @@ public class RedBACKAuto extends OpMode {
     public void autoPathUpdate() {
         switch (pathState) {
             case 0:
-                follower.setMaxPower(0.9);
+                follower.setMaxPower(1.0);
                 flywheel.setVelocity(flywheelVelocity);
                 hood.setPosition(hoodPosition);
                 spindex.setTargetPosition(-spindexOffset);
@@ -127,7 +131,7 @@ public class RedBACKAuto extends OpMode {
                 }
                 break;
             case 3:
-                if (!follower.isBusy() && pathTimer.getElapsedTimeSeconds() > 0.5) {
+                if (follower.getPose().getX() > 131 || !follower.isBusy()) {
                     follower.followPath(intakingOut);
                     setPathState(pathState + 1);
                 }
@@ -265,6 +269,9 @@ public class RedBACKAuto extends OpMode {
         autoPathUpdate();
         launchAll();
         autoIntake();
+
+        telemetryM = PanelsTelemetry.INSTANCE.getTelemetry();
+
         if (opmodeTimer.getElapsedTimeSeconds() > 27 && !parkTime) {
             launchAllSwitch = 0;
             gateSwitch = 0;

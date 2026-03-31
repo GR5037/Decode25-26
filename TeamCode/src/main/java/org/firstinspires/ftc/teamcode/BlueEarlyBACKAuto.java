@@ -30,7 +30,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 
-@Autonomous(name = "BLUE BACK Auto", group = "Auto",  preselectTeleOp= "BlueTele")
+@Autonomous(name = "Early BLUE BACK Auto", group = "Auto",  preselectTeleOp= "BlueTele")
 
 public class BlueEarlyBACKAuto extends OpMode {
     int Motif = 1; //1=GPP 2=PGP 3=PPG

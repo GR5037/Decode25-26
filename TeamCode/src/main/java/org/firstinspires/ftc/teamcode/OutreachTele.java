@@ -60,8 +60,8 @@ import java.util.List;
 
 
 //@Configurable
-@TeleOp(name = "RedTele", group = "Tele")
-public class RedTele extends OpMode {
+@TeleOp(name = "OutreachTele", group = "Tele")
+public class OutreachTele extends OpMode {
     private Limelight3A limelight;
     static DcMotor leftFrontDrive;
     static DcMotor rightFrontDrive;
@@ -77,15 +77,6 @@ public class RedTele extends OpMode {
     static NormalizedColorSensor BBcolor;
     static NormalizedColorSensor RTcolor;
     static NormalizedColorSensor RBcolor;
-    static NormalizedRGBA colors1;
-    static NormalizedRGBA colors2;
-    static NormalizedRGBA colors3;
-    static NormalizedRGBA colors4;
-    static NormalizedRGBA colors5;
-    static NormalizedRGBA colors6;
-    static String rightColor;
-    static String backColor;
-    static String leftColor;
     static DistanceSensor LTdist;
     static DistanceSensor LBdist;
     static DistanceSensor RTdist;
@@ -128,7 +119,7 @@ public class RedTele extends OpMode {
         GREEN,
         NONE
     }
-     List<LynxModule> allHubs;
+    List<LynxModule> allHubs;
     List<String> queue = new ArrayList<>();
 
 
@@ -163,10 +154,10 @@ public class RedTele extends OpMode {
 
         LTdist = hardwareMap.get(DistanceSensor.class, "LTcolor");
         LBdist = hardwareMap.get(DistanceSensor.class, "LBcolor");
-        RTdist = hardwareMap.get(DistanceSensor.class, "RTcolor");
-        RBdist = hardwareMap.get(DistanceSensor.class, "RBcolor");
-        BTdist = hardwareMap.get(DistanceSensor.class, "BTcolor");
-        BBdist = hardwareMap.get(DistanceSensor.class, "BBcolor");
+        RTdist = hardwareMap.get(DistanceSensor.class, "BTcolor");
+        RBdist = hardwareMap.get(DistanceSensor.class, "BBcolor");
+        BTdist = hardwareMap.get(DistanceSensor.class, "RTcolor");
+        BBdist = hardwareMap.get(DistanceSensor.class, "RBcolor");
 
         spindex = hardwareMap.get(DcMotorEx.class, "spindex");
         flywheel = hardwareMap.get(DcMotorEx.class, "flywheel");
@@ -226,6 +217,9 @@ public class RedTele extends OpMode {
         Robot.flywheelOn = true;
         follower.setStartingPose(new Pose(xPoseFromAuto, yPoseFromAuto, headingFromAuto));
         follower.startTeleOpDrive(true);
+
+        hood.setPosition(0.5);
+
         runtime.reset();
     }
 
@@ -243,24 +237,23 @@ public class RedTele extends OpMode {
 
 //        LLResult llResult = limelight.getLatestResult();
 
-        colors1 = LTcolor.getNormalizedColors();
-        colors2 = LBcolor.getNormalizedColors();
-        colors3 = BTcolor.getNormalizedColors();
-        colors4 = BBcolor.getNormalizedColors();
-        colors5 = RTcolor.getNormalizedColors();
-        colors6 = RBcolor.getNormalizedColors();
-
-        double dist1 = LTdist.getDistance(DistanceUnit.CM);
-        double dist2 = LBdist.getDistance(DistanceUnit.CM);
-        double dist3 = RTdist.getDistance(DistanceUnit.CM);
-        double dist4 = RBdist.getDistance(DistanceUnit.CM);
-        double dist5 = BTdist.getDistance(DistanceUnit.CM);
-        double dist6 = BBdist.getDistance(DistanceUnit.CM);
+//        NormalizedRGBA colors1 = LTcolor.getNormalizedColors();
+//        NormalizedRGBA colors2 = LBcolor.getNormalizedColors();
+//        NormalizedRGBA colors3 = BTcolor.getNormalizedColors();
+//        NormalizedRGBA colors4 = BBcolor.getNormalizedColors();
+//        NormalizedRGBA colors5 = RTcolor.getNormalizedColors();
+//        NormalizedRGBA colors6 = RBcolor.getNormalizedColors();
+//
+//        double dist1 = LTdist.getDistance(DistanceUnit.CM);
+//        double dist2 = LBdist.getDistance(DistanceUnit.CM);
+//        double dist3 = RTdist.getDistance(DistanceUnit.CM);
+//        double dist4 = RBdist.getDistance(DistanceUnit.CM);
+//        double dist5 = BTdist.getDistance(DistanceUnit.CM);
+//        double dist6 = BBdist.getDistance(DistanceUnit.CM);
 
         //Relocalise (not cam yet)
         if (gamepad1.yWasPressed() && gamepad1.dpadUpWasPressed()) {
-//            follower.setPose(new Pose(7.54, 8.83,0)); actyual
-            follower.setPose(new Pose(130, 130,Math.toRadians(40)));
+            follower.setPose(new Pose(7.54, 8.83,0));
         }
 
         //Drive
@@ -299,75 +292,89 @@ public class RedTele extends OpMode {
         }
 
         //Calculations
-        double robotHeading = follower.getPose().getHeading();
+//        double robotHeading = follower.getPose().getHeading();
 
-        Robot.xTurretPose = follower.getPose().getX() + 2.7062 * (Math.cos(robotHeading + Math.toRadians(85.24)));
-        Robot.yTurretPose = follower.getPose().getY() + 2.7062 * (Math.sin(robotHeading + Math.toRadians(85.24)));
+//        Robot.xTurretPose = follower.getPose().getX() + 2.7062 * (Math.cos(robotHeading + Math.toRadians(85.24)));
+//        Robot.yTurretPose = follower.getPose().getY() + 2.7062 * (Math.sin(robotHeading + Math.toRadians(85.24)));
+//
+//        Robot.turretDistanceToGoal = Math.hypot(Robot.xTurretPose - Robot.xRedGoal, Robot.yTurretPose - Robot.yGoal);
+//
+//        Robot.velocity1 = Robot.velocityA * (Math.pow(Robot.turretDistanceToGoal, 2));
+//        Robot.velocity2 = Robot.velocityB * Robot.turretDistanceToGoal;
+//        Robot.flywheelVelocity = (int) (Robot.velocity1 + Robot.velocity2 + Robot.velocityC);
+//        if (Robot.flywheelVelocity > Robot.velocityMax) {
+//            Robot.flywheelVelocity = Robot.velocityMax;
+//        } else if (Robot.flywheelVelocity < Robot.velocityMin) {
+//            Robot.flywheelVelocity = Robot.velocityMin;
+//        }
+//
+//        Robot.angle1 = Robot.angleA * (Math.pow(flywheelVelocity , 2));
+//        Robot.angle2 = Robot.angleB * flywheelVelocity;
+//        Robot.hoodAngle = (Robot.angle1 + Robot.angle2 + Robot.angleC);
+//        if (Robot.hoodAngle < Robot.hoodMax) {
+//            Robot.hoodAngle = Robot.hoodMax;
+//        } else if (Robot.hoodAngle > Robot.hoodMin) {
+//            Robot.hoodAngle = Robot.hoodMin;
+//        }
+//
+//
+//
+//        currentTurretAngle = Math.atan2((yGoal - yTurretPose),(xRedGoal - xTurretPose)) - robotHeading;
+//        deltaTargetAngle = currentTurretAngle - lastTurretAngle;
+//        if (deltaTargetAngle < -Math.PI){
+//            deltaTargetAngle += 2 * Math.PI;
+//        } else if (deltaTargetAngle > Math.PI) {
+//            deltaTargetAngle -= 2 * Math.PI;
+//        }
+//        totalTurretAngle += deltaTargetAngle;
+//        if (totalTurretAngle < -Math.toRadians(300)){
+//            totalTurretAngle = Math.PI / 2;
+//        } else if (totalTurretAngle > Math.toRadians(300)){
+//            totalTurretAngle = -Math.PI / 2;
+//        }
+//        lastTurretAngle = totalTurretAngle;
+//        turretEncoder = (int) ((totalTurretAngle / (2 * Math.PI)) * 13332);
 
-        Robot.turretDistanceToGoal = Math.hypot(Robot.xTurretPose - Robot.xRedGoal, Robot.yTurretPose - Robot.yGoal);
-
-        Robot.velocity1 = Robot.velocityA * (Math.pow(Robot.turretDistanceToGoal, 2));
-        Robot.velocity2 = Robot.velocityB * Robot.turretDistanceToGoal;
-        Robot.flywheelVelocity = (int) (Robot.velocity1 + Robot.velocity2 + Robot.velocityC);
-        if (Robot.flywheelVelocity > Robot.velocityMax) {
-            Robot.flywheelVelocity = Robot.velocityMax;
-        } else if (Robot.flywheelVelocity < Robot.velocityMin) {
-            Robot.flywheelVelocity = Robot.velocityMin;
-        }
-
-        Robot.angle1 = Robot.angleA * (Math.pow(flywheelVelocity , 2));
-        Robot.angle2 = Robot.angleB * flywheelVelocity;
-        Robot.hoodAngle = (Robot.angle1 + Robot.angle2 + Robot.angleC);
-        if (Robot.hoodAngle < Robot.hoodMax) {
-            Robot.hoodAngle = Robot.hoodMax;
-        } else if (Robot.hoodAngle > Robot.hoodMin) {
-            Robot.hoodAngle = Robot.hoodMin;
-        }
-
-
-
-        currentTurretAngle = Math.atan2((yGoal - yTurretPose),(xRedGoal - xTurretPose)) - robotHeading;
-        deltaTargetAngle = currentTurretAngle - lastTurretAngle;
-        if (deltaTargetAngle < -Math.PI){
-            deltaTargetAngle += 2 * Math.PI;
-        } else if (deltaTargetAngle > Math.PI) {
-            deltaTargetAngle -= 2 * Math.PI;
-        }
-        totalTurretAngle += deltaTargetAngle;
-        if (totalTurretAngle < -Math.toRadians(300)){
-            totalTurretAngle = Math.PI / 2;
-        } else if (totalTurretAngle > Math.toRadians(300)){
-            totalTurretAngle = -Math.PI / 2;
-        }
-        lastTurretAngle = totalTurretAngle;
-        turretEncoder = (int) ((totalTurretAngle / (2 * Math.PI)) * 13332);
-
-        turret.setTargetPosition(turretEncoder);
+        turret.setTargetPosition(0);
         turret.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         turret.setPower(1.0);
 
-        if (ejectSwitch == 0) {
-            hood.setPosition(Robot.hoodAngle);
-        }
+//        if (ejectSwitch == 0) {
+//            hood.setPosition(Robot.hoodAngle);
+//        }
 
 
         //Flywheel
-        if (gamepad2.left_bumper) {
-            Robot.flywheelOn = true;
-//            PIDFCoefficients flywheelpidfCoefficients = new PIDFCoefficients(Robot.flyP, Robot.flyI, Robot.flyD, Robot.flyF);
-//            flywheel.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, flywheelpidfCoefficients);
-        } else if (gamepad2.right_bumper) {
-            Robot.flywheelOn = false;
-            PIDFCoefficients spindexpidfCoefficients = new PIDFCoefficients(Robot.dexP, Robot.dexI, Robot.dexD, Robot.dexF);
-            spindex.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, spindexpidfCoefficients);
-            PIDFCoefficients turretpidCoefficients = new PIDFCoefficients(Robot.turP, Robot.turI, Robot.turD, Robot.turF);
-            turret.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, turretpidCoefficients);
+//        if (gamepad2.left_bumper) {
+//            Robot.flywheelOn = true;
+////            PIDFCoefficients flywheelpidfCoefficients = new PIDFCoefficients(Robot.flyP, Robot.flyI, Robot.flyD, Robot.flyF);
+////            flywheel.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, flywheelpidfCoefficients);
+//        } else if (gamepad2.right_bumper) {
+//            Robot.flywheelOn = false;
+//            PIDFCoefficients spindexpidfCoefficients = new PIDFCoefficients(Robot.dexP, Robot.dexI, Robot.dexD, Robot.dexF);
+//            spindex.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, spindexpidfCoefficients);
+//            PIDFCoefficients turretpidCoefficients = new PIDFCoefficients(Robot.turP, Robot.turI, Robot.turD, Robot.turF);
+//            turret.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, turretpidCoefficients);
+//        }
+//        if (!Robot.flywheelOn) {
+//            flywheel.setVelocity(0.0);
+//        } else if (ejectSwitch == 0){
+//            flywheel.setVelocity(flywheelVelocity);
+//        }
+
+        if (gamepad2.dpadUpWasPressed()){
+            flywheelVelocity += 100;
         }
-        if (!Robot.flywheelOn) {
-            flywheel.setVelocity(0.0);
-        } else if (ejectSwitch == 0){
-            flywheel.setVelocity(flywheelVelocity);
+        if (gamepad2.dpadDownWasPressed()){
+            flywheelVelocity -= 100;
         }
+        if (gamepad2.rightBumperWasPressed()) {
+            flywheelVelocity = 0;
+        }
+        if (gamepad2.leftBumperWasPressed()) {
+            flywheelVelocity = 1000;
+        }
+        flywheel.setVelocity(flywheelVelocity);
 
         //Intake
         if (gamepad2.left_trigger > 0.1) {
@@ -524,56 +531,57 @@ public class RedTele extends OpMode {
         }
 
         //Eject current ball
-        switch (Robot.ejectSwitch) {
-            case 0:
-                if (gamepad2.dpad_up) {
-                    ejectSwitch++;
-                }
-                break;
-            case 1:
-                queue.clear();
-                hood.setPosition(hoodMax);
-                flywheel.setVelocity(0);
-                runtime.reset();
-                Robot.ejectSwitch++;
-                break;
-            case 2:
-                if (runtime.milliseconds() > 100 && !spindex.isBusy()) {
-                    transfer.setPosition(Robot.transfer3);
-                    if (Robot.numberOfBalls > 0) {
-                        Robot.numberOfBalls--;
-                    }
-                    runtime.reset();
-                    Robot.ejectSwitch++;
-                }
-                break;
-            case 3:
-                if (runtime.milliseconds() > Robot.transferOneTime) {
-                    transfer.setPosition(Robot.transferRest);
-                    Robot.ejectSwitch = 0;
-                }
-                break;
-        }
+//        switch (Robot.ejectSwitch) {
+//            case 0:
+//                if (gamepad2.dpad_up) {
+//                    ejectSwitch++;
+//                }
+//                break;
+//            case 1:
+//                queue.clear();
+//                hood.setPosition(hoodMax);
+//                flywheel.setVelocity(0);
+//                runtime.reset();
+//                Robot.ejectSwitch++;
+//                break;
+//            case 2:
+//                if (runtime.milliseconds() > 100 && !spindex.isBusy()) {
+//                    transfer.setPosition(Robot.transfer3);
+//                    if (Robot.numberOfBalls > 0) {
+//                        Robot.numberOfBalls--;
+//                    }
+//                    runtime.reset();
+//                    Robot.ejectSwitch++;
+//                }
+//                break;
+//            case 3:
+//                if (runtime.milliseconds() > Robot.transferOneTime) {
+//                    transfer.setPosition(Robot.transferRest);
+//                    Robot.ejectSwitch = 0;
+//                }
+//                break;
+//        }
+
 
         //Kickstand
-        switch (Robot.kickstandSwitch) {
-            case 0:
-                if (gamepad2.dpadDownWasPressed()) {
-                    leftKickstand.setPosition(Robot.lkLowered);
-                    rightKickstand.setPosition(Robot.rkLowered);
-                    flywheelOn = false;
-                    Robot.kickstandSwitch++;
-                }
-                break;
-            case 1:
-                if (gamepad2.dpadDownWasPressed()) {
-                    leftKickstand.setPosition(Robot.lkRaised);
-                    rightKickstand.setPosition(Robot.rkRaised);
-                    flywheelOn = true;
-                    Robot.kickstandSwitch = 0;
-                }
-                break;
-        }
+//        switch (Robot.kickstandSwitch) {
+//            case 0:
+//                if (gamepad2.dpadDownWasPressed()) {
+//                    leftKickstand.setPosition(Robot.lkLowered);
+//                    rightKickstand.setPosition(Robot.rkLowered);
+//                    flywheelOn = false;
+//                    Robot.kickstandSwitch++;
+//                }
+//                break;
+//            case 1:
+//                if (gamepad2.dpadDownWasPressed()) {
+//                    leftKickstand.setPosition(Robot.lkRaised);
+//                    rightKickstand.setPosition(Robot.rkRaised);
+//                    flywheelOn = true;
+//                    Robot.kickstandSwitch = 0;
+//                }
+//                break;
+//        }
 //        if (gamepad2.xWasPressed()){
 //            queuePurple();
 //        }
@@ -594,23 +602,12 @@ public class RedTele extends OpMode {
 //        telemetry.addData("total turret angle", totalTurretAngle);
 //        telemetry.addData("turret encoder", turretEncoder);
 ////        telemetry.addData("llresult", llResult.isValid());
-
-        rightStatus();
-        leftStatus();
-        backStatus();
-
-        telemetry.addData("Right Color", rightColor);
-        telemetry.addData("Left Color", leftColor);
-        telemetry.addData("Back Color", backColor);
-
-        telemetry.addData("RT", JavaUtil.colorToHue(colors5.toColor()));
-        telemetry.addData("RB", JavaUtil.colorToHue(colors6.toColor()));
-
-        telemetry.update();
-
+//        telemetry.addData("distance", RBcolor.getDistance(DistanceUnit.CM));
+//        telemetry.addData("Color", RBcolor.getNormalizedColors());
 //        telemetry.addData("RBG", RBcolor.green());
 //        telemetry.addData("eject", ejectSwitch);
 //        telemetry.addData("up", gamepad2.dpad_up);
+        telemetry.addData("Flywheel Speed", flywheel.getVelocity());
 //
 //        telemetryM.debug(turretEncoder);
 //        telemetryM.debug(turret.getCurrentPosition());
@@ -678,47 +675,35 @@ public class RedTele extends OpMode {
         spindex.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         spindex.setPower(1.0);
     }
-    public void backStatus() {
-        if ((BBdist.getDistance(DistanceUnit.CM) > 5) || (BTdist.getDistance(DistanceUnit.CM) > 5)) {
-            if ((JavaUtil.colorToHue(colors3.toColor()) >= 90 && JavaUtil.colorToHue(colors3.toColor()) <= 150) || (JavaUtil.colorToHue(colors4.toColor()) >= 90 && JavaUtil.colorToHue(colors4.toColor()) <= 150)) {
-                backColor = "Green"; // Green
-            } else if ((JavaUtil.colorToHue(colors3.toColor()) >= 170 && JavaUtil.colorToHue(colors3.toColor()) <= 250) || (JavaUtil.colorToHue(colors3.toColor()) >= 170 && JavaUtil.colorToHue(colors3.toColor()) <= 250)) {
-                backColor = "Purple"; // Purple
-            } else {
-                backColor = "Ball detected, color unknown";
-            }
-        } else {
-            backColor = "No ball detected";
-        }
-    }
+//    public void backStatus() {
+//        if ((BBcolor.getDistance(DistanceUnit.CM) < 5) || (BTcolor.getDistance(DistanceUnit.CM) < 5)) {
+//            if ((hue3 >= 90 && hue3 <= 150) || (hue4 >= 90 && hue4 <= 150)) {
+//                // Green
+//            } else {
+//                // Purple
+//            }
+//        }
+//    }
 //
-    public void leftStatus() {
-        if ((LBdist.getDistance(DistanceUnit.CM) > 5) || (LTdist.getDistance(DistanceUnit.CM) > 5)) {
-            if ((JavaUtil.colorToHue(colors1.toColor()) >= 90 && JavaUtil.colorToHue(colors1.toColor()) <= 150) || (JavaUtil.colorToHue(colors2.toColor()) >= 90 && JavaUtil.colorToHue(colors2.toColor()) <= 150)) {
-                leftColor = "Green"; // Green
-            } else if ((JavaUtil.colorToHue(colors1.toColor()) >= 170 && JavaUtil.colorToHue(colors1.toColor()) <= 250) || (JavaUtil.colorToHue(colors2.toColor()) >= 170 && JavaUtil.colorToHue(colors2.toColor()) <= 250)) {
-                leftColor = "Purple"; // Purple
-            } else {
-                leftColor = "Ball detected, color unknown";
-            }
-        } else {
-            leftColor = "No ball detected";
-        }
-    }
+//    public void leftStatus() {
+//        if ((LBcolor.getDistance(DistanceUnit.CM) < 5) || (LTcolor.getDistance(DistanceUnit.CM) < 5)) {
+//            if ((hue1 >= 90 && hue1 <= 150) || (hue2 >= 90 && hue2 <= 150)) {
+//                // Green
+//            } else {
+//                // Purple
+//            }
+//        }
+//    }
 //
-    public void rightStatus() {
-        if ((RBdist.getDistance(DistanceUnit.CM) > 5) || (RTdist.getDistance(DistanceUnit.CM) > 5)) {
-            if ((JavaUtil.colorToHue(colors5.toColor()) >= 90 && JavaUtil.colorToHue(colors5.toColor()) <= 150) || (JavaUtil.colorToHue(colors6.toColor()) >= 90 && JavaUtil.colorToHue(colors6.toColor()) <= 150)) {
-                rightColor = "Green"; // Green
-            } else if ((JavaUtil.colorToHue(colors5.toColor()) >= 170 && JavaUtil.colorToHue(colors5.toColor()) <= 250) || (JavaUtil.colorToHue(colors6.toColor()) >= 170 && JavaUtil.colorToHue(colors6.toColor()) <= 250)) {
-                rightColor = "Purple"; // Purple
-            } else {
-                rightColor = "Ball detected, color unknown";
-            }
-        } else {
-            rightColor = "No ball detected";
-        }
-    }
+//    public void rightStatus() {
+//        if ((RBcolor.getDistance(DistanceUnit.CM) < 5) || (RTcolor.getDistance(DistanceUnit.CM) < 5)) {
+//            if ((hue5 >= 90 && hue5 <= 150) || (hue6 >= 90 && hue6 <= 150)) {
+//                // Green
+//            } else {
+//                // Purple
+//            }
+//        }
+//    }
 //
 //    public void queueGreen() {
 //        queue.add("green");
