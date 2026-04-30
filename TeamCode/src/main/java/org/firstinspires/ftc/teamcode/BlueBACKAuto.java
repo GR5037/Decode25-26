@@ -7,12 +7,16 @@ import static org.firstinspires.ftc.teamcode.Robot.gateSwitch;
 import static org.firstinspires.ftc.teamcode.Robot.launchAllSwitch;
 import static org.firstinspires.ftc.teamcode.Robot.numberOfSpins;
 import static org.firstinspires.ftc.teamcode.Robot.spindexPose;
+import static org.firstinspires.ftc.teamcode.Robot.teleIsRed;
+
+import com.bylazar.telemetry.PanelsTelemetry;
 import static java.lang.Thread.sleep;
 
+import com.bylazar.telemetry.PanelsTelemetry;
+import com.bylazar.telemetry.TelemetryManager;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.BezierCurve;
 import com.pedropathing.geometry.BezierLine;
-import com.pedropathing.geometry.BezierPoint;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.Path;
 import com.pedropathing.paths.PathChain;
@@ -30,7 +34,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 
-@Autonomous(name = "BLUE BACK Auto", group = "Auto",  preselectTeleOp= "BlueTele")
+@Autonomous(name = "BLUE BACK Auto", group = "Auto",  preselectTeleOp= "NewTele")
 
 public class BlueBACKAuto extends OpMode {
     int Motif = 1; //1=GPP 2=PGP 3=PPG
@@ -66,15 +70,16 @@ public class BlueBACKAuto extends OpMode {
     static DigitalChannel gate;
     static AnalogInput absTurret;
     static AnalogInput absSpindex;
+    private TelemetryManager telemetryM;
 
     private final Pose startPose = new Pose(56, 7.54, Math.toRadians(90));
     private final Pose launchPosition = new Pose(56, 20, Math.toRadians(180));
     private final Pose lineUpPose = new Pose(52, 10, Math.toRadians(180));
-    private final Pose intakeIn = new Pose(14.5, 10, Math.toRadians(180));
-    private final Pose intakeOut = new Pose(18, 10, Math.toRadians(180));
-    private final Pose park = new Pose(34, 20, Math.toRadians(0));
+    private final Pose intakeIn = new Pose(11, 10, Math.toRadians(180));
+    private final Pose intakeOut = new Pose(17, 10, Math.toRadians(180));
+    private final Pose park = new Pose(34, 20, Math.toRadians(180));
     private PathChain launchToIntake;
-    private Path  launchPreload,  intakingOut, secondIntakingIn, launch, parkpath;
+    private Path  launchPreload,  intakingOut, secondIntakingIn, launch;
     private Follower follower;
     private Timer pathTimer, actionTimer, opmodeTimer;
     private int pathState;
@@ -104,7 +109,7 @@ public class BlueBACKAuto extends OpMode {
     public void autoPathUpdate() {
         switch (pathState) {
             case 0:
-                follower.setMaxPower(0.9);
+                follower.setMaxPower(1.0);
                 flywheel.setVelocity(flywheelVelocity);
                 hood.setPosition(hoodPosition);
                 spindex.setTargetPosition(-spindexOffset);
@@ -128,7 +133,7 @@ public class BlueBACKAuto extends OpMode {
                 }
                 break;
             case 3:
-                if (!follower.isBusy() && pathTimer.getElapsedTimeSeconds() > 0.5) {
+                if (follower.getPose().getX() > 131 || !follower.isBusy()) {
                     follower.followPath(intakingOut);
                     setPathState(pathState + 1);
                 }
@@ -266,6 +271,9 @@ public class BlueBACKAuto extends OpMode {
         autoPathUpdate();
         launchAll();
         autoIntake();
+
+        telemetryM = PanelsTelemetry.INSTANCE.getTelemetry();
+
         if (opmodeTimer.getElapsedTimeSeconds() > 27 && !parkTime) {
             launchAllSwitch = 0;
             gateSwitch = 0;
@@ -292,6 +300,7 @@ public class BlueBACKAuto extends OpMode {
         Robot.xPoseFromAuto = follower.getPose().getX();
         Robot.yPoseFromAuto = follower.getPose().getY();
         Robot.headingFromAuto = follower.getHeading();
+        Robot.teleIsRed = false;
     }
 
 

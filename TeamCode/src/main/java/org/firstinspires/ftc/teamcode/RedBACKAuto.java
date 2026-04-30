@@ -7,6 +7,8 @@ import static org.firstinspires.ftc.teamcode.Robot.gateSwitch;
 import static org.firstinspires.ftc.teamcode.Robot.launchAllSwitch;
 import static org.firstinspires.ftc.teamcode.Robot.numberOfSpins;
 import static org.firstinspires.ftc.teamcode.Robot.spindexPose;
+import static org.firstinspires.ftc.teamcode.Robot.teleIsRed;
+
 import com.bylazar.telemetry.PanelsTelemetry;
 import static java.lang.Thread.sleep;
 
@@ -32,7 +34,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 
-@Autonomous(name = "RED BACK Auto", group = "Auto",  preselectTeleOp= "RedTele")
+@Autonomous(name = "RED BACK Auto", group = "Auto",  preselectTeleOp= "NewTele")
 
 public class RedBACKAuto extends OpMode {
      int Motif = 1; //1=GPP 2=PGP 3=PPG
@@ -298,6 +300,7 @@ public class RedBACKAuto extends OpMode {
         Robot.xPoseFromAuto = follower.getPose().getX();
         Robot.yPoseFromAuto = follower.getPose().getY();
         Robot.headingFromAuto = follower.getHeading();
+        Robot.teleIsRed = true;
     }
 
 

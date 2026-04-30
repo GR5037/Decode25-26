@@ -81,8 +81,8 @@ public class Robot {
     static double yTurretPose;
     static double turretDistanceToGoal;
     static int xBlueGoal = 15;
-    static int xRedGoal = 132;
-    static int yGoal = 132;
+    static int xRedGoal = 134;
+    static int yGoal = 134;
     static double velocityA = 0.0110641;
     static double velocityB = 6.11461;
     static double velocityC = 1380.89071;
@@ -100,53 +100,11 @@ public class Robot {
     static double hoodMin = 0.73;
     static double hoodAngle;
     static double turretOffsetFromAuto = 0;
+    static boolean teleIsRed = true;
+    static double sP = 0.0006, sI = 0, sD = 0.03, sF = 0.1, spindexAllowedError = 50;
+    static double tP = 0.001, tI = 0, tD = 0.05, tF = 0.04, turretAllowedError = 50;
     public static String data = "Default data";
 
-//    public static FollowerConstants followerConstants = new FollowerConstants() // All to change
-//            .mass(14.74);
-//
-//
-//    public static MecanumConstants driveConstants = new MecanumConstants() // All to change
-//            .maxPower(1)
-//            .rightFrontMotorName("fr")
-//            .rightRearMotorName("br")
-//            .leftRearMotorName("bl")
-//            .leftFrontMotorName("fl")
-//            .leftFrontMotorDirection(DcMotorSimple.Direction.REVERSE)
-//            .leftRearMotorDirection(DcMotorSimple.Direction.REVERSE)
-//            .rightFrontMotorDirection(DcMotorSimple.Direction.FORWARD)
-//            .rightRearMotorDirection(DcMotorSimple.Direction.REVERSE);
-//
-//
-//    public static PinpointConstants localizerConstants = new PinpointConstants() // All to change
-//            .forwardPodY(7.779)
-//            .strafePodX(8.0)
-//            .distanceUnit(DistanceUnit.INCH)
-//            .hardwareMapName("pinpoint")
-//            .encoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD)
-//            .forwardEncoderDirection(GoBildaPinpointDriver.EncoderDirection.FORWARD)
-//            .strafeEncoderDirection(GoBildaPinpointDriver.EncoderDirection.FORWARD);
-//
-//    public static PathConstraints pathConstraints = new PathConstraints(0.99,
-//            100,
-//            1.4,
-//            1); // All to change
-//
-//
-//    public static Follower createFollower(HardwareMap hardwareMap) {
-//        return new FollowerBuilder(followerConstants, hardwareMap)
-//                .pathConstraints(pathConstraints)
-//                .mecanumDrivetrain(driveConstants)
-//                .pinpointLocalizer(localizerConstants)
-//                .build(); // All to change
-//    }
-//
-//    public static void init(HardwareMap hardwareMap) {
-//
-//
-////        follower = Constants.createFollower(hardwareMap);
-////        follower.update();
-//    }
 }
 
 
