@@ -81,8 +81,8 @@ public class Robot {
     static double yTurretPose;
     static double turretDistanceToGoal;
     static int xBlueGoal = 15;
-    static int xRedGoal = 134;
-    static int yGoal = 134;
+    static int xRedGoal = 133;
+    static int yGoal = 132;
     static double velocityA = 0.0110641;
     static double velocityB = 6.11461;
     static double velocityC = 1380.89071;

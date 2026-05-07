@@ -38,6 +38,9 @@ import static org.firstinspires.ftc.teamcode.Robot.xTurretPose;
 import static org.firstinspires.ftc.teamcode.Robot.yGoal;
 import static org.firstinspires.ftc.teamcode.Robot.yPoseFromAuto;
 import static org.firstinspires.ftc.teamcode.Robot.yTurretPose;
+
+import com.pedropathing.ftc.FTCCoordinates;
+import com.pedropathing.geometry.PedroCoordinates;
 import com.qualcomm.hardware.lynx.LynxModule;
 
 
@@ -64,6 +67,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.JavaUtil;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 
 import java.util.ArrayList;
@@ -207,17 +211,13 @@ public class NewTele extends OpMode {
         turret.setZeroPowerBehavior(BRAKE);
 
         PIDFCoefficients flywheelpidfCoefficients = new PIDFCoefficients(Robot.flyP, Robot.flyI, Robot.flyD, Robot.flyF);
-//        PIDFCoefficients spindexpidfCoefficients = new PIDFCoefficients(Robot.dexP, Robot.dexI, Robot.dexD, Robot.dexF);
-//        PIDFCoefficients turretpidCoefficients = new PIDFCoefficients(Robot.turP, Robot.turI, Robot.turD, Robot.turF);
 
         flywheel.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, flywheelpidfCoefficients);
         spindex.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         spindex.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-//        spindex.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, spindexpidfCoefficients);
         turret.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         turret.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-//        turret.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, turretpidCoefficients);
-//        spindex.setTargetPositionTolerance(20);
+
 
         gate = hardwareMap.get(DigitalChannel.class, "gate");
         gate.setMode(DigitalChannel.Mode.INPUT);
@@ -225,7 +225,7 @@ public class NewTele extends OpMode {
         absSpindex = hardwareMap.get(AnalogInput.class, "ABSspindex");
 
         limelight = hardwareMap.get(Limelight3A.class, "limelight");
-        limelight.pipelineSwitch(3);
+        limelight.pipelineSwitch(2);
 
         allHubs = hardwareMap.getAll(LynxModule.class);
         for (LynxModule hub : allHubs) {
@@ -252,7 +252,7 @@ public class NewTele extends OpMode {
     @Override
     public void start(){
         telemetry.clear();
-//        limelight.start();
+        limelight.start();
 
         rightKickstand.setPosition(Robot.rkRaised);
         leftKickstand.setPosition(Robot.lkRaised);
@@ -288,9 +288,6 @@ public class NewTele extends OpMode {
 
         //Read Sensors
 
-
-//        LLResult llResult = limelight.getLatestResult();
-
 //        colors1 = LTcolor.getNormalizedColors();
 //        colors2 = LBcolor.getNormalizedColors();
 //        colors3 = BTcolor.getNormalizedColors();
@@ -305,12 +302,23 @@ public class NewTele extends OpMode {
 //        double dist5 = BTdist.getDistance(DistanceUnit.CM);
 //        double dist6 = BBdist.getDistance(DistanceUnit.CM);
 
+        LLResult llResult = limelight.getLatestResult();
+        Pose3D camPose = llResult.getBotpose();
+
         //Relocalise (not cam yet)
         if (gamepad1.yWasPressed() && gamepad1.dpadUpWasPressed()) {
-            if (teleIsRed) {
-                follower.setPose(new Pose(7.54, 8.83,0));
-            } else {
-                follower.setPose(new Pose(136, 8.83,Math.toRadians(180)));
+//            if (teleIsRed) {
+//                follower.setPose(new Pose(7.54, 8.83,0));
+//            } else {
+//                follower.setPose(new Pose(136, 8.83,Math.toRadians(180)));
+//            }
+
+            //LLResult llResult = limelight.getLatestResult();
+
+            if (llResult.isValid()) {
+                follower.setPose(
+                    new Pose(camPose.getPosition().x, camPose.getPosition().y, camPose.getOrientation().getYaw(), FTCCoordinates.INSTANCE).getAsCoordinateSystem(PedroCoordinates.INSTANCE)
+                );
             }
 
         }
@@ -433,10 +441,6 @@ public class NewTele extends OpMode {
 //            flywheel.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, flywheelpidfCoefficients);
         } else if (gamepad2.right_bumper) {
             Robot.flywheelOn = false;
-//            PIDFCoefficients spindexpidfCoefficients = new PIDFCoefficients(Robot.dexP, Robot.dexI, Robot.dexD, Robot.dexF);
-//            spindex.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, spindexpidfCoefficients);
-//            PIDFCoefficients turretpidCoefficients = new PIDFCoefficients(Robot.turP, Robot.turI, Robot.turD, Robot.turF);
-//            turret.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, turretpidCoefficients);
         }
         if (!Robot.flywheelOn) {
             flywheel.setVelocity(0.0);
@@ -456,8 +460,6 @@ public class NewTele extends OpMode {
                 case 1:
                     if (!gate.getState()) {
                         spin1CW();
-                        gamepad1.rumbleBlips(1);
-                        gamepad2.rumbleBlips(1);
                         Robot.gateSwitch++;
                     }
                     break;
@@ -469,8 +471,6 @@ public class NewTele extends OpMode {
                 case 3:
                     if (!gate.getState()) {
                         spin1CW();
-                        gamepad1.rumbleBlips(1);
-                        gamepad2.rumbleBlips(1);
                         Robot.gateSwitch++;
                     }
                     break;
@@ -481,8 +481,8 @@ public class NewTele extends OpMode {
                     break;
                 case 5:
                     if (!gate.getState()) {
-                        gamepad1.rumbleBlips(2);
-                        gamepad2.rumbleBlips(2);
+                        gamepad1.rumble(400);
+                        gamepad2.rumble(400);
                         Robot.gateSwitch++;
                     }
                     break;
@@ -657,50 +657,23 @@ public class NewTele extends OpMode {
 //        }
 
         // Telemetry
-//        telemetryM.debug("current", currentTurretAngle);
-//        telemetryM.debug("delta", deltaTargetAngle);
-//        telemetryM.debug("total", totalTurretAngle);
-//        telemetryM.debug("encoder", turretEncoder);
-//
-////        telemetry.addData("# of balls", Robot.numberOfBalls);
-//        telemetry.addData("hood angle", Robot.hoodAngle);
-//        telemetry.addData("flywheel velocity", flywheelVelocity);
-//        telemetry.addData("turret distance to goal", turretDistanceToGoal);
-//        telemetry.addData("total turret angle", totalTurretAngle);
-//        telemetry.addData("turret encoder", turretEncoder);
-////        telemetry.addData("llresult", llResult.isValid());
-//
-//        rightStatus();
-//        leftStatus();
-//        backStatus();
-//
-//        telemetry.addData("Right Color", rightColor);
-//        telemetry.addData("Left Color", leftColor);
-//        telemetry.addData("Back Color", backColor);
-//        telemetry.addData("Magnet", gate.getState());
-//
-//        telemetry.addData("RT", JavaUtil.colorToHue(colors5.toColor()));
-//        telemetry.addData("RB", JavaUtil.colorToHue(colors6.toColor()));
+        telemetryM.debug("Limelight:");
+        telemetryM.debug(camPose.getPosition().x, camPose.getPosition().y, camPose.getOrientation().getYaw());
+        telemetryM.debug("string");
+        telemetryM.debug(camPose.toString());
+        telemetryM.debug(llResult.isValid());
+        telemetryM.debug("Follower:");
+        telemetryM.debug(follower.getPose().getX());
+        telemetryM.debug(follower.getPose().getY());
+        telemetryM.debug(follower.getPose().getHeading());
 
-        telemetry.update();
 
-//        telemetry.addData("RBG", RBcolor.green());
-//        telemetry.addData("eject", ejectSwitch);
-//        telemetry.addData("up", gamepad2.dpad_up);
-//
-//        telemetryM.debug(turretEncoder);
-//        telemetryM.debug(turret.getCurrentPosition());
-//
-//        telemetryM.debug(flywheel.getVelocity());
-//
-//        telemetryM.debug(currentTurretAngle);
-//
-//        telemetryM.debug("distance", turretDistanceToGoal);
         while (loopTime.milliseconds() < 30) {
 
         }
 //        telemetryM.addData("loop time", loopTime.milliseconds());
         telemetryM.update();
+        telemetry.update();
 
         loopTime.reset();
     }
