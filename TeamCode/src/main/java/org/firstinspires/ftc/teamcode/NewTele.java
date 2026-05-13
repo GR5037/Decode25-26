@@ -26,16 +26,19 @@ import static org.firstinspires.ftc.teamcode.Robot.sP;
 import static org.firstinspires.ftc.teamcode.Robot.spindexPose;
 import static org.firstinspires.ftc.teamcode.Robot.teleIsRed;
 import static org.firstinspires.ftc.teamcode.Robot.transferRest;
+import static org.firstinspires.ftc.teamcode.Robot.turretCompConstant;
 import static org.firstinspires.ftc.teamcode.Robot.turretDistanceToGoal;
 import static org.firstinspires.ftc.teamcode.Robot.velocityA;
 import static org.firstinspires.ftc.teamcode.Robot.velocityB;
 import static org.firstinspires.ftc.teamcode.Robot.velocityC;
 import static org.firstinspires.ftc.teamcode.Robot.velocityMin;
 import static org.firstinspires.ftc.teamcode.Robot.xBlueGoal;
+import static org.firstinspires.ftc.teamcode.Robot.xGoalCompConstant;
 import static org.firstinspires.ftc.teamcode.Robot.xPoseFromAuto;
 import static org.firstinspires.ftc.teamcode.Robot.xRedGoal;
 import static org.firstinspires.ftc.teamcode.Robot.xTurretPose;
 import static org.firstinspires.ftc.teamcode.Robot.yGoal;
+import static org.firstinspires.ftc.teamcode.Robot.yGoalCompConstant;
 import static org.firstinspires.ftc.teamcode.Robot.yPoseFromAuto;
 import static org.firstinspires.ftc.teamcode.Robot.yTurretPose;
 
@@ -139,6 +142,8 @@ public class NewTele extends OpMode {
     int turretTracking = 1;
     int spindexTracking = 1;
     double xGoal;
+    double compedXGoal;
+    double compedYGoal;
     static ElapsedTime spindexTimer = new ElapsedTime();
     static ElapsedTime turretTimer = new ElapsedTime();
 
@@ -252,7 +257,7 @@ public class NewTele extends OpMode {
     @Override
     public void start(){
         telemetry.clear();
-        limelight.start();
+//        limelight.start();
 
         rightKickstand.setPosition(Robot.rkRaised);
         leftKickstand.setPosition(Robot.lkRaised);
@@ -302,25 +307,23 @@ public class NewTele extends OpMode {
 //        double dist5 = BTdist.getDistance(DistanceUnit.CM);
 //        double dist6 = BBdist.getDistance(DistanceUnit.CM);
 
-        LLResult llResult = limelight.getLatestResult();
-        Pose3D camPose = llResult.getBotpose();
 
         //Relocalise (not cam yet)
         if (gamepad1.yWasPressed() && gamepad1.dpadUpWasPressed()) {
-//            if (teleIsRed) {
-//                follower.setPose(new Pose(7.54, 8.83,0));
-//            } else {
-//                follower.setPose(new Pose(136, 8.83,Math.toRadians(180)));
-//            }
-
-            //LLResult llResult = limelight.getLatestResult();
-
-            if (llResult.isValid()) {
-                follower.setPose(
-                    new Pose(camPose.getPosition().x, camPose.getPosition().y, camPose.getOrientation().getYaw(), FTCCoordinates.INSTANCE).getAsCoordinateSystem(PedroCoordinates.INSTANCE)
-                );
+            if (teleIsRed) {
+                follower.setPose(new Pose(7.85, 9.55,0));
+            } else {
+                follower.setPose(new Pose(135.54, 7.93,Math.toRadians(180)));
             }
 
+//            LLResult llResult = limelight.getLatestResult();
+//            Pose3D camPose = llResult.getBotpose();
+//
+//            if (llResult.isValid()) {
+//                follower.setPose(
+//                    new Pose(camPose.getPosition().x, camPose.getPosition().y, camPose.getOrientation().getYaw(), FTCCoordinates.INSTANCE).getAsCoordinateSystem(PedroCoordinates.INSTANCE)
+//                );
+//            }
         }
 
         //Drive
@@ -359,12 +362,15 @@ public class NewTele extends OpMode {
         }
 
         //Calculations
+        compedXGoal = xGoal + xGoalCompConstant * follower.getVelocity().getXComponent();
+        compedYGoal = yGoal + yGoalCompConstant * follower.getVelocity().getYComponent();
+
         double robotHeading = follower.getPose().getHeading();
 
         Robot.xTurretPose = follower.getPose().getX() + 2.7062 * (Math.cos(robotHeading + Math.toRadians(85.24)));
         Robot.yTurretPose = follower.getPose().getY() + 2.7062 * (Math.sin(robotHeading + Math.toRadians(85.24)));
 
-        Robot.turretDistanceToGoal = Math.hypot(Robot.xTurretPose - xGoal, Robot.yTurretPose - Robot.yGoal);
+        Robot.turretDistanceToGoal = Math.hypot(Robot.xTurretPose - compedXGoal, Robot.yTurretPose - compedYGoal);
 
         Robot.velocity1 = Robot.velocityA * (Math.pow(Robot.turretDistanceToGoal, 2));
         Robot.velocity2 = Robot.velocityB * Robot.turretDistanceToGoal;
@@ -384,7 +390,7 @@ public class NewTele extends OpMode {
             Robot.hoodAngle = Robot.hoodMin;
         }
 
-        currentTurretAngle = Math.atan2((yGoal - yTurretPose),(xGoal - xTurretPose)) - robotHeading;
+        currentTurretAngle = Math.atan2((compedYGoal - yTurretPose),(compedXGoal - xTurretPose)) - robotHeading;
         deltaTargetAngle = currentTurretAngle - lastTurretAngle;
         if (deltaTargetAngle < -Math.PI){
             deltaTargetAngle += 2 * Math.PI;
@@ -399,6 +405,8 @@ public class NewTele extends OpMode {
         }
         lastTurretAngle = totalTurretAngle;
         turretEncoder = (int) ((totalTurretAngle / (2 * Math.PI)) * 13332);
+        turretEncoder = (int) (turretEncoder + turretCompConstant * follower.getAngularVelocity());
+
 
         if (ejectSwitch == 0) {
             hood.setPosition(Robot.hoodAngle);
@@ -437,8 +445,6 @@ public class NewTele extends OpMode {
         //Flywheel
         if (gamepad2.left_bumper) {
             Robot.flywheelOn = true;
-//            PIDFCoefficients flywheelpidfCoefficients = new PIDFCoefficients(Robot.flyP, Robot.flyI, Robot.flyD, Robot.flyF);
-//            flywheel.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, flywheelpidfCoefficients);
         } else if (gamepad2.right_bumper) {
             Robot.flywheelOn = false;
         }
@@ -657,15 +663,17 @@ public class NewTele extends OpMode {
 //        }
 
         // Telemetry
-        telemetryM.debug("Limelight:");
-        telemetryM.debug(camPose.getPosition().x, camPose.getPosition().y, camPose.getOrientation().getYaw());
-        telemetryM.debug("string");
-        telemetryM.debug(camPose.toString());
-        telemetryM.debug(llResult.isValid());
-        telemetryM.debug("Follower:");
-        telemetryM.debug(follower.getPose().getX());
-        telemetryM.debug(follower.getPose().getY());
-        telemetryM.debug(follower.getPose().getHeading());
+//        telemetryM.debug("Limelight:");
+//        telemetryM.debug(camPose.getPosition().x, camPose.getPosition().y, camPose.getOrientation().getYaw());
+//        telemetryM.debug("string");
+//        telemetryM.debug(camPose.toString());
+//        telemetryM.debug(llResult.isValid());
+////        telemetryM.debug("Follower:");
+//        telemetryM.debug(follower.getPose().getX());
+//        telemetryM.debug(follower.getPose().getY());
+//        telemetryM.debug(follower.getPose().getHeading());
+        telemetryM.debug(turretError);
+        telemetryM.addData("error", turretError);
 
 
         while (loopTime.milliseconds() < 30) {

@@ -103,6 +103,9 @@ public class Robot {
     static boolean teleIsRed = true;
     static double sP = 0.0006, sI = 0, sD = 0.03, sF = 0.1, spindexAllowedError = 50;
     static double tP = 0.001, tI = 0, tD = 0.05, tF = 0.04, turretAllowedError = 50;
+    static double turretCompConstant = -100;
+    static double xGoalCompConstant = -0.5;
+    static double yGoalCompConstant = -0.5;
     public static String data = "Default data";
 
 }
