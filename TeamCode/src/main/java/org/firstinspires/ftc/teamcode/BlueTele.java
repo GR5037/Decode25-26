@@ -2,59 +2,41 @@ package org.firstinspires.ftc.teamcode;
 
 import static com.qualcomm.robotcore.hardware.DcMotor.ZeroPowerBehavior.BRAKE;
 import static com.qualcomm.robotcore.hardware.DcMotor.ZeroPowerBehavior.FLOAT;
-
-
-import static org.firstinspires.ftc.teamcode.Robot.angleA;
 import static org.firstinspires.ftc.teamcode.Robot.ejectSwitch;
 import static org.firstinspires.ftc.teamcode.Robot.flywheelOn;
 import static org.firstinspires.ftc.teamcode.Robot.flywheelVelocity;
 import static org.firstinspires.ftc.teamcode.Robot.headingFromAuto;
 import static org.firstinspires.ftc.teamcode.Robot.hoodMax;
-import static org.firstinspires.ftc.teamcode.Robot.hoodMin;
 import static org.firstinspires.ftc.teamcode.Robot.launchAllSwitch;
-import static org.firstinspires.ftc.teamcode.Robot.numberOfBalls;
 import static org.firstinspires.ftc.teamcode.Robot.numberOfSpins;
 import static org.firstinspires.ftc.teamcode.Robot.spindexPose;
 import static org.firstinspires.ftc.teamcode.Robot.transferRest;
-import static org.firstinspires.ftc.teamcode.Robot.turretDistanceToGoal;
-import static org.firstinspires.ftc.teamcode.Robot.velocityA;
-import static org.firstinspires.ftc.teamcode.Robot.velocityB;
-import static org.firstinspires.ftc.teamcode.Robot.velocityC;
-import static org.firstinspires.ftc.teamcode.Robot.velocityMin;
 import static org.firstinspires.ftc.teamcode.Robot.xBlueGoal;
 import static org.firstinspires.ftc.teamcode.Robot.xPoseFromAuto;
-import static org.firstinspires.ftc.teamcode.Robot.xRedGoal;
 import static org.firstinspires.ftc.teamcode.Robot.xTurretPose;
 import static org.firstinspires.ftc.teamcode.Robot.yGoal;
 import static org.firstinspires.ftc.teamcode.Robot.yPoseFromAuto;
 import static org.firstinspires.ftc.teamcode.Robot.yTurretPose;
-import com.qualcomm.hardware.lynx.LynxModule;
 
-
-import com.bylazar.panels.Panels;
-import com.pedropathing.follower.Follower;
-import com.pedropathing.geometry.Pose;
-import com.qualcomm.hardware.limelightvision.LLResult;
-import com.qualcomm.hardware.limelightvision.Limelight3A;
-import com.qualcomm.robotcore.eventloop.opmode.Disabled;
-import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.bylazar.telemetry.PanelsTelemetry;
 import com.bylazar.telemetry.TelemetryManager;
+import com.pedropathing.follower.Follower;
+import com.pedropathing.geometry.Pose;
+import com.qualcomm.hardware.limelightvision.Limelight3A;
+import com.qualcomm.hardware.lynx.LynxModule;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
+import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.AnalogInput;
-import com.qualcomm.robotcore.hardware.ColorRangeSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DigitalChannel;
 import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.hardware.NormalizedColorSensor;
-import com.qualcomm.robotcore.hardware.NormalizedRGBA;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
-import org.firstinspires.ftc.robotcore.external.JavaUtil;
-import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 
 import java.util.ArrayList;

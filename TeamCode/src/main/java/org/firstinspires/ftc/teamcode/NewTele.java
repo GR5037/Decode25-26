@@ -669,11 +669,11 @@ public class NewTele extends OpMode {
 //        telemetryM.debug(camPose.toString());
 //        telemetryM.debug(llResult.isValid());
 ////        telemetryM.debug("Follower:");
-//        telemetryM.debug(follower.getPose().getX());
-//        telemetryM.debug(follower.getPose().getY());
-//        telemetryM.debug(follower.getPose().getHeading());
-        telemetryM.debug(turretError);
-        telemetryM.addData("error", turretError);
+        telemetryM.debug(follower.getPose().getX());
+        telemetryM.debug(follower.getPose().getY());
+        telemetryM.debug(follower.getPose().getHeading());
+//        telemetryM.debug(turretError);
+//        telemetryM.addData("error", turretError);
 
 
         while (loopTime.milliseconds() < 30) {
