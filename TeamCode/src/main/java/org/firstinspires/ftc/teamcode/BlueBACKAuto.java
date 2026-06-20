@@ -6,8 +6,18 @@ import static org.firstinspires.ftc.teamcode.Robot.dexP;
 import static org.firstinspires.ftc.teamcode.Robot.gateSwitch;
 import static org.firstinspires.ftc.teamcode.Robot.launchAllSwitch;
 import static org.firstinspires.ftc.teamcode.Robot.numberOfSpins;
+import static org.firstinspires.ftc.teamcode.Robot.sD;
+import static org.firstinspires.ftc.teamcode.Robot.sF;
+import static org.firstinspires.ftc.teamcode.Robot.sI;
+import static org.firstinspires.ftc.teamcode.Robot.sP;
+import static org.firstinspires.ftc.teamcode.Robot.spindexAllowedError;
 import static org.firstinspires.ftc.teamcode.Robot.spindexPose;
+import static org.firstinspires.ftc.teamcode.Robot.tD;
+import static org.firstinspires.ftc.teamcode.Robot.tF;
+import static org.firstinspires.ftc.teamcode.Robot.tI;
+import static org.firstinspires.ftc.teamcode.Robot.tP;
 import static org.firstinspires.ftc.teamcode.Robot.teleIsRed;
+import static org.firstinspires.ftc.teamcode.Robot.turretAllowedError;
 
 import com.bylazar.telemetry.PanelsTelemetry;
 import static java.lang.Thread.sleep;
@@ -31,6 +41,8 @@ import com.qualcomm.robotcore.hardware.DigitalChannel;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
+import com.bylazar.telemetry.TelemetryManager;
+
 
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 
@@ -38,8 +50,9 @@ import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 
 public class BlueBACKAuto extends OpMode {
     int Motif = 1; //1=GPP 2=PGP 3=PPG
+    private TelemetryManager telemetryM;
     double hoodPosition = 0.25;
-    double flywheelVelocity = 2300;
+    double flywheelVelocity = 2000;
     double velocityMin = flywheelVelocity - 100;
     int turretOffset = 0;
     int spindexOffset = 0;
@@ -48,7 +61,7 @@ public class BlueBACKAuto extends OpMode {
     Robot robot = new Robot();
     static int angle;
 
-
+    ElapsedTime loopTime = new ElapsedTime();
     static DcMotor leftFrontDrive;
     static DcMotor rightFrontDrive;
     static DcMotor leftBackDrive;
@@ -57,12 +70,12 @@ public class BlueBACKAuto extends OpMode {
     static Servo leftKickstand;
     static Servo rightKickstand;
     static Servo hood;
-    static ColorRangeSensor LTcolor;
-    static ColorRangeSensor LBcolor;
-    static ColorRangeSensor BTcolor;
-    static ColorRangeSensor BBcolor;
-    static ColorRangeSensor RTcolor;
-    static ColorRangeSensor RBcolor;
+//    static ColorRangeSensor LTcolor;
+//    static ColorRangeSensor LBcolor;
+//    static ColorRangeSensor BTcolor;
+//    static ColorRangeSensor BBcolor;
+//    static ColorRangeSensor RTcolor;
+//    static ColorRangeSensor RBcolor;
     static DcMotorEx spindex;
     static DcMotorEx flywheel;
     static DcMotorEx intake;
@@ -70,19 +83,28 @@ public class BlueBACKAuto extends OpMode {
     static DigitalChannel gate;
     static AnalogInput absTurret;
     static AnalogInput absSpindex;
-    private TelemetryManager telemetryM;
 
     private final Pose startPose = new Pose(56, 7.54, Math.toRadians(90));
     private final Pose launchPosition = new Pose(56, 20, Math.toRadians(180));
-    private final Pose lineUpPose = new Pose(52, 10, Math.toRadians(180));
-    private final Pose intakeIn = new Pose(11, 10, Math.toRadians(180));
+    private final Pose lineUpPose = new Pose(52, 12, Math.toRadians(180));
+    private final Pose intakeIn = new Pose(11.5, 10, Math.toRadians(180));
     private final Pose intakeOut = new Pose(17, 10, Math.toRadians(180));
-    private final Pose park = new Pose(34, 20, Math.toRadians(180));
+    private final Pose park = new Pose(34, 22, Math.toRadians(180));
+    private final Pose lineUpForSpike = new Pose(43,34,Math.toRadians(180));
+    private final Pose intakeSpike = new Pose(19,34,Math.toRadians(180));
+    private final Pose launchSpike = new Pose(56,20,Math.toRadians(180));
     private PathChain launchToIntake;
-    private Path  launchPreload,  intakingOut, secondIntakingIn, launch;
+    private Path  launchPreload,  intakingOut, secondIntakingIn, launch, liningup, intakingSpike, launchingSpike;
     private Follower follower;
     private Timer pathTimer, actionTimer, opmodeTimer;
     private int pathState;
+    static double spindexError = 0, spindexLastError = 0, spindexDerivative = 0, spindexIntegralSum = 0, spindexPower = 0;
+    static boolean spindexIsBusy = false;
+    static double turretError = 0, turretLastError = 0, turretDerivative = 0, turretIntegralSum = 0, turretPower = 0;
+    static boolean turretIsBusy = false;
+    static int turretEncoder = 0;
+    static ElapsedTime spindexTimer = new ElapsedTime();
+    static ElapsedTime turretTimer = new ElapsedTime();
     static ElapsedTime runtime = new ElapsedTime();
 
     private void buildPaths() {
@@ -104,6 +126,15 @@ public class BlueBACKAuto extends OpMode {
 
         launch = new Path(new BezierLine(intakeIn, launchPosition));
         launch.setConstantHeadingInterpolation(launchPosition.getHeading());
+
+        liningup = new Path(new BezierLine(launchPosition, lineUpForSpike));
+        liningup.setConstantHeadingInterpolation(lineUpForSpike.getHeading());
+
+        intakingSpike = new Path(new BezierLine(lineUpForSpike, intakeSpike));
+        intakingSpike.setConstantHeadingInterpolation(intakeSpike.getHeading());
+
+        launchingSpike = new Path(new BezierLine(intakeSpike,launchSpike));
+        launchingSpike.setConstantHeadingInterpolation(launchSpike.getHeading());
     }
 
     public void autoPathUpdate() {
@@ -112,15 +143,12 @@ public class BlueBACKAuto extends OpMode {
                 follower.setMaxPower(1.0);
                 flywheel.setVelocity(flywheelVelocity);
                 hood.setPosition(hoodPosition);
-                spindex.setTargetPosition(-spindexOffset);
-                spindex.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-                spindex.setPower(1.0);
-                aimTurret(-68);
+                aimTurret(-70);
                 follower.followPath(launchPreload);
                 setPathState(pathState + 1);
                 break;
             case 1:
-                if (!follower.isBusy() && (flywheel.getVelocity() > velocityMin)) {
+                if (!follower.isBusy() && (flywheel.getVelocity() > velocityMin)  && !spindexIsBusy) {
                     launchAllSwitch = 1;
                     setPathState(pathState + 1);
                 }
@@ -158,16 +186,43 @@ public class BlueBACKAuto extends OpMode {
                 }
                 break;
             case 7:
+                if (launchAllSwitch > 6){
+                    follower.followPath(liningup);
+                    gateSwitch = 1;
+                    setPathState(pathState + 1);
+                }
+                break;
+            case 8:
+                if (!follower.isBusy()){
+                    follower.setMaxPower(0.7);
+                    follower.followPath(intakingSpike);
+                    setPathState(pathState + 1);
+                }
+                break;
+            case 9:
+                if (gateSwitch > 6 || pathTimer.getElapsedTimeSeconds() > 2) {
+                    follower.followPath(launchingSpike);
+                    setPathState(pathState + 1);
+                }
+                break;
+            case 10:
+                if (!follower.isBusy()) {
+                    gateSwitch = 0;
+                    launchAllSwitch = 1;
+                    setPathState(pathState + 1);
+                }
+                break;
+            case 11:
                 if (launchAllSwitch > 6) {
                     follower.followPath(launchToIntake);
                     gateSwitch = 1;
                     setPathState(pathState + 1);
                 }
                 break;
-            case 8:
+            case 12:
                 if (!follower.isBusy() && pathTimer.getElapsedTimeSeconds() > 2) {
                     follower.followPath(launch);
-                    setPathState(6);
+                    setPathState(10);
                 }
                 break;
 
@@ -180,11 +235,12 @@ public class BlueBACKAuto extends OpMode {
     }
 
     public void init() {
+        telemetryM = PanelsTelemetry.INSTANCE.getTelemetry();
 
-        leftFrontDrive = hardwareMap.get(DcMotor.class, "fl");
-        rightFrontDrive = hardwareMap.get(DcMotor.class, "fr");
-        leftBackDrive = hardwareMap.get(DcMotor.class, "bl");
-        rightBackDrive = hardwareMap.get(DcMotor.class, "br");
+        leftFrontDrive = hardwareMap.get(DcMotorEx.class, "fl");
+        rightFrontDrive = hardwareMap.get(DcMotorEx.class, "fr");
+        leftBackDrive = hardwareMap.get(DcMotorEx.class, "bl");
+        rightBackDrive = hardwareMap.get(DcMotorEx.class, "br");
 
         leftFrontDrive.setZeroPowerBehavior(BRAKE);
         rightFrontDrive.setZeroPowerBehavior(BRAKE);
@@ -196,12 +252,19 @@ public class BlueBACKAuto extends OpMode {
         rightKickstand = hardwareMap.get(Servo.class, "Rstand");
         hood = hardwareMap.get(Servo.class, "hood");
 
-        LTcolor = hardwareMap.get(ColorRangeSensor.class, "LTcolor");
-        LBcolor = hardwareMap.get(ColorRangeSensor.class, "LBcolor");
-        BTcolor = hardwareMap.get(ColorRangeSensor.class, "BTcolor");
-        BBcolor = hardwareMap.get(ColorRangeSensor.class, "BBcolor");
-        RTcolor = hardwareMap.get(ColorRangeSensor.class, "RTcolor");
-        RBcolor = hardwareMap.get(ColorRangeSensor.class, "RBcolor");
+//        LTcolor = hardwareMap.get(NormalizedColorSensor.class, "LTcolor");
+//        LBcolor = hardwareMap.get(NormalizedColorSensor.class, "LBcolor");
+//        BTcolor = hardwareMap.get(NormalizedColorSensor.class, "BTcolor");
+//        BBcolor = hardwareMap.get(NormalizedColorSensor.class, "BBcolor");
+//        RTcolor = hardwareMap.get(NormalizedColorSensor.class, "RTcolor");
+//        RBcolor = hardwareMap.get(NormalizedColorSensor.class, "RBcolor");
+//
+//        LTdist = hardwareMap.get(DistanceSensor.class, "LTcolor");
+//        LBdist = hardwareMap.get(DistanceSensor.class, "LBcolor");
+//        RTdist = hardwareMap.get(DistanceSensor.class, "RTcolor");
+//        RBdist = hardwareMap.get(DistanceSensor.class, "RBcolor");
+//        BTdist = hardwareMap.get(DistanceSensor.class, "BTcolor");
+//        BBdist = hardwareMap.get(DistanceSensor.class, "BBcolor");
 
         spindex = hardwareMap.get(DcMotorEx.class, "spindex");
         flywheel = hardwareMap.get(DcMotorEx.class, "flywheel");
@@ -213,23 +276,18 @@ public class BlueBACKAuto extends OpMode {
         intake.setDirection(DcMotorEx.Direction.REVERSE);
         turret.setDirection(DcMotorEx.Direction.REVERSE);
 
-        spindex.setZeroPowerBehavior(FLOAT);
+        spindex.setZeroPowerBehavior(BRAKE);
         flywheel.setZeroPowerBehavior(FLOAT);
         intake.setZeroPowerBehavior(BRAKE);
         turret.setZeroPowerBehavior(BRAKE);
 
         PIDFCoefficients flywheelpidfCoefficients = new PIDFCoefficients(Robot.flyP, Robot.flyI, Robot.flyD, Robot.flyF);
-        PIDFCoefficients spindexpidfCoefficients = new PIDFCoefficients(Robot.dexP, Robot.dexI, Robot.dexD, Robot.dexF);
-        PIDFCoefficients turretpidCoefficients = new PIDFCoefficients(Robot.turP, Robot.turI, Robot.turD, Robot.turF);
 
         flywheel.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, flywheelpidfCoefficients);
         spindex.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        spindex.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, spindexpidfCoefficients);
+        spindex.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         turret.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        turret.setTargetPosition(0);
-        turret.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, turretpidCoefficients);
-        turret.setPower(1.0);
-        spindex.setTargetPositionTolerance(20);
+        turret.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
         gate = hardwareMap.get(DigitalChannel.class, "gate");
         gate.setMode(DigitalChannel.Mode.INPUT);
@@ -260,7 +318,7 @@ public class BlueBACKAuto extends OpMode {
     }
 
     public void start() {
-        spindexOffset = (int) ( ((absSpindex.getVoltage() / 3.3) * 4000) + 60);
+        spindexOffset = (int) ( ((absSpindex.getVoltage() / 3.3) * 4000) - 30);
         turretOffset  = (int) ( ((absTurret.getVoltage() / 3.3) * 4000) - 2550);
 
         opmodeTimer.resetTimer();
@@ -269,10 +327,12 @@ public class BlueBACKAuto extends OpMode {
     public void loop() {
         follower.update();
         autoPathUpdate();
+        turretPIDF();
+        spindexPIDF();
         launchAll();
         autoIntake();
 
-        telemetryM = PanelsTelemetry.INSTANCE.getTelemetry();
+
 
         if (opmodeTimer.getElapsedTimeSeconds() > 27 && !parkTime) {
             launchAllSwitch = 0;
@@ -284,16 +344,20 @@ public class BlueBACKAuto extends OpMode {
             setPathState(-1);
         }
 //         Feedback to Driver Hub for debugging
-        telemetry.addData("path state", pathState);
-        telemetry.addData("x", follower.getPose().getX());
-        telemetry.addData("y", follower.getPose().getY());
-        telemetry.addData("heading", follower.getPose().getHeading());
-        telemetry.addData("velocity", flywheel.getVelocity());
-        telemetry.addData("turret", turret.isBusy());
-        telemetry.addData("follower", follower.isBusy());
+//        telemetry.addData("path state", pathState);
+//        telemetry.addData("x", follower.getPose().getX());
+//        telemetry.addData("y", follower.getPose().getY());
+//        telemetry.addData("heading", follower.getPose().getHeading());
+//        telemetry.addData("velocity", flywheel.getVelocity());
+//        telemetry.addData("turret", turret.isBusy());
+//        telemetry.addData("follower", follower.isBusy());
+//
+//        telemetry.update();
 
-        telemetry.update();
+        telemetryM.addData("loop time", loopTime.milliseconds());
+        telemetryM.update();
 
+        loopTime.reset();
     }
 
     public void stop() {
@@ -303,142 +367,157 @@ public class BlueBACKAuto extends OpMode {
         Robot.teleIsRed = false;
     }
 
-
-    public  void  launchAll() {
+    public void launchAll() {
         switch (Robot.launchAllSwitch) { //launch all balls
-            case 1:
-                if (flywheel.getVelocity() > velocityMin) {
-                    transfer.setPosition(Robot.transfer1);
-                    runtime.reset();
-                    Robot.launchAllSwitch++;
+        case 1:
+            transfer.setPosition(Robot.transfer1);
+            if (Robot.numberOfBalls > 0) {
+                Robot.numberOfBalls--;
+            }
+            runtime.reset();
+            Robot.launchAllSwitch++;
+            break;
+        case 2:
+            if (runtime.milliseconds() > Robot.transferOneTime) {
+                spin1CW();
+                Robot.launchAllSwitch++;
+            }
+            break;
+        case 3:
+            if (!spindexIsBusy && flywheel.getVelocity() > flywheelVelocity - 100) {
+                transfer.setPosition(Robot.transfer2);
+                if (Robot.numberOfBalls > 0) {
+                    Robot.numberOfBalls--;
                 }
-                break;
-            case 2:
-                if (runtime.milliseconds() > 500) {
-                    spin1CW();
-                    runtime.reset();
-                    Robot.launchAllSwitch++;
+                runtime.reset();
+                Robot.launchAllSwitch++;
+            }
+            break;
+        case 4:
+            if (runtime.milliseconds() > Robot.transferOneTime) {
+                spin1CW();
+                Robot.launchAllSwitch++;
+            }
+            break;
+        case 5:
+            if (!spindexIsBusy && flywheel.getVelocity() > flywheelVelocity - 100) {
+                transfer.setPosition(Robot.transfer3);
+                if (Robot.numberOfBalls > 0) {
+                    Robot.numberOfBalls--;
                 }
-                break;
-            case 3:
-                if (!spindex.isBusy() && flywheel.getVelocity() > velocityMin) {
-                    transfer.setPosition(Robot.transfer2);
-                    runtime.reset();
-                    Robot.launchAllSwitch++;
-                }
-                break;
-            case 4:
-                if (runtime.milliseconds() > 500) {
-                    spin1CW();
-                    runtime.reset();
-                    Robot.launchAllSwitch++;
-                }
-                break;
-            case 5:
-                if (!spindex.isBusy() && flywheel.getVelocity() > velocityMin) {
-                    transfer.setPosition(Robot.transfer3);
-                    runtime.reset();
-                    Robot.launchAllSwitch++;
-                }
-                break;
-            case 6:
-                if (runtime.milliseconds() > 500) {
-                    transfer.setPosition(Robot.transferRest);
-                    runtime.reset();
-                    Robot.launchAllSwitch++;
-                }
-                break;
-            case 7:
-                if (runtime.milliseconds() > 900) {
-                    Robot.launchAllSwitch = 0;
-                }
-                break;
-        }
+                runtime.reset();
+                Robot.launchAllSwitch++;
+            }
+            break;
+        case 6:
+            if (runtime.milliseconds() > Robot.transferOneTime) {
+                transfer.setPosition(Robot.transferRest);
+                runtime.reset();
+                Robot.launchAllSwitch++;
+            }
+            break;
+        case 7:
+            if (runtime.milliseconds() > 900) {
+                Robot.launchAllSwitch = 0;
+            }
+            break;
     }
+}
 
-    public  void autoIntake() {
-        switch (Robot.gateSwitch) {
-            case 0:
+public  void autoIntake() {
+    switch (Robot.gateSwitch) {
+        case 1:
+            intake.setPower(1.0);
+            if (gate.getState()) {
+                Robot.gateSwitch++;
+            }
+            break;
+        case 2:
+            if (!gate.getState()) {
+                spin1CW();
+                Robot.gateSwitch++;
+            }
+            break;
+        case 3:
+            if (gate.getState()) {
+                Robot.gateSwitch++;
+            }
+            break;
+        case 4:
+            if (!gate.getState()) {
+                spin1CW();
+                Robot.gateSwitch++;
+            }
+            break;
+        case 5:
+            if (gate.getState()) {
+                Robot.gateSwitch++;
+            }
+            break;
+        case 6:
+            if (!gate.getState()) {
+                Robot.gateSwitch++;
+                runtime.reset();
+            }
+            break;
+        case 7:
+            if (runtime.seconds() > 0.25) {
                 intake.setPower(-0.3);
-                break;
-            case 1:
-                intake.setPower(1.0);
-                if (gate.getState()) {
-                    Robot.gateSwitch++;
-                }
-                break;
-            case 2:
-                if (!gate.getState()) {
-                    spin1CW();
-                    Robot.gateSwitch++;
-                }
-                break;
-            case 3:
-                if (gate.getState()) {
-                    Robot.gateSwitch++;
-                }
-                break;
-            case 4:
-                if (!gate.getState()) {
-                    spin1CW();
-                    Robot.gateSwitch++;
-                }
-                break;
-            case 5:
-                if (gate.getState()) {
-                    Robot.gateSwitch++;
-                }
-                break;
-            case 6:
-                if (!gate.getState()) {
-                    intake.setPower(-1.0);
-                    runtime.reset();
-                    Robot.gateSwitch++;
-                }
-                break;
-            case 7:
-                if (runtime.seconds() > 2) {
-                    gateSwitch = 0;
-                }
-                break;
-        }
+                Robot.gateSwitch = 0;
+            }
+            break;
+    }
+}
 
+public static void spin1CW(){
 
-
+    numberOfSpins--;
+    spindexPose = spindexPose - 1333;
+    if (numberOfSpins == 0) {
+        spindexPose = 0;
+    } else if (numberOfSpins % 3 == 0) {
+        spindexPose--;
     }
 
-    public  void spin1CW(){
+}
 
-        numberOfSpins--;
-        spindexPose = spindexPose - 1333;
-        if (numberOfSpins == 0) {
-            spindexPose = 0;
-        } else if (numberOfSpins % 3 == 0) {
-            spindexPose--;
-        }
-        spindex.setTargetPosition(spindexPose - spindexOffset);
-        spindex.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        spindex.setPower(0.8);
-    }
-    public  void spin2CW(){
-        numberOfSpins = numberOfSpins - 2;
-        spindexPose = spindexPose - 2666;
-        if (numberOfSpins == 0) {
-            spindexPose = 0;
-        } else if (numberOfSpins % 3 == 0) {
-            spindexPose--;
-        }
-        spindex.setTargetPosition(spindexPose - spindexOffset);
-        spindex.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        spindex.setPower(1.0);
-    }
+public void spindexPIDF(){
+    spindexError = spindexPose - spindex.getCurrentPosition() - spindexOffset;
+    if (Math.abs(spindexError) > spindexAllowedError) {
+        spindexIsBusy = true;
+        spindexDerivative = (spindexError - spindexLastError) / spindexTimer.milliseconds();
+        spindexIntegralSum = spindexIntegralSum + (spindexError * spindexTimer.milliseconds());
+        spindexPower = (sF * Math.signum(spindexError)) + (sP * spindexError) + (sI * spindexIntegralSum) + (sD * spindexDerivative);
 
-    public  void aimTurret(double turretPose) {
-        angle = (int) (((turretPose) /360) * 13332);
-        turret.setTargetPosition(angle - turretOffset);
-        turret.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        turret.setPower(1.0);
+        spindex.setPower(spindexPower);
+        spindexLastError = spindexError;
+        spindexTimer.reset();
+    } else {
+        spindex.setPower(0);
+        spindexIsBusy = false;
     }
+}
+
+public void turretPIDF(){
+    turretError =  turretEncoder - turret.getCurrentPosition() - turretOffset;
+    if (Math.abs(turretError) > turretAllowedError) {
+        turretIsBusy = true;
+        turretDerivative = (turretError - turretLastError) / turretTimer.milliseconds();
+        turretIntegralSum = turretIntegralSum + (turretError * turretTimer.milliseconds());
+        turretPower = (tF * Math.signum(turretError)) + (tP * turretError) + (tI * turretIntegralSum) + (tD * turretDerivative);
+
+        turret.setPower(turretPower);
+        turretLastError = turretError;
+        turretTimer.reset();
+    } else {
+        turret.setPower(0);
+        turretIsBusy = false;
+    }
+}
+
+public  void aimTurret(double turretPose) {
+    turretEncoder = (int) (((turretPose) /360) * 13332);
+}
 
 }
 

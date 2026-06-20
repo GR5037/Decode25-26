@@ -28,6 +28,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 
 @Autonomous
+@Disabled
 public class limelightTest extends OpMode {
 //    private DigitalChannel limitSwitch;
 //

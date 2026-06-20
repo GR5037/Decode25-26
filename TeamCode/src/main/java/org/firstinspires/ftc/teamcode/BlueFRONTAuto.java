@@ -20,9 +20,10 @@ import static org.firstinspires.ftc.teamcode.Robot.tP;
 import static org.firstinspires.ftc.teamcode.Robot.teleIsRed;
 import static org.firstinspires.ftc.teamcode.Robot.turretAllowedError;
 import static org.firstinspires.ftc.teamcode.Robot.turretCompConstant;
+import static org.firstinspires.ftc.teamcode.Robot.turretDistanceToGoal;
 import static org.firstinspires.ftc.teamcode.Robot.xGoalCompConstant;
 import static org.firstinspires.ftc.teamcode.Robot.xTurretPose;
-import static org.firstinspires.ftc.teamcode.Robot.yGoal;
+import static org.firstinspires.ftc.teamcode.Robot.yBlueGoal;
 import static org.firstinspires.ftc.teamcode.Robot.yGoalCompConstant;
 import static org.firstinspires.ftc.teamcode.Robot.yTurretPose;
 
@@ -38,6 +39,8 @@ import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.Path;
 import com.pedropathing.paths.PathChain;
 import com.pedropathing.util.Timer;
+import com.qualcomm.hardware.limelightvision.LLResult;
+import com.qualcomm.hardware.limelightvision.LLResultTypes;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
@@ -51,6 +54,8 @@ import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
+
+import java.util.List;
 
 @Autonomous(name = "BLUE FRONT Auto", group = "Auto",  preselectTeleOp= "NewTele")
 
@@ -115,13 +120,15 @@ public class BlueFRONTAuto extends OpMode {
     static ElapsedTime spindexTimer = new ElapsedTime();
     static ElapsedTime turretTimer = new ElapsedTime();
 
+    private Limelight3A limelight;
+    int id;
 
     private void buildPaths() {
         launch0 = follower.pathBuilder()
                 .addPath(
                         new BezierLine(
                                 new Pose(28.840, 127.540),
-                                new Pose(50.000, 80.000)
+                                new Pose(50.00, 79.5)
                         )
                 )
                 .setTangentHeadingInterpolation()
@@ -131,8 +138,8 @@ public class BlueFRONTAuto extends OpMode {
         intake1 = follower.pathBuilder()
                 .addPath(
                         new BezierLine(
-                                new Pose(50.000, 80.000),
-                                new Pose(21.0, 80.000)
+                                new Pose(50, 79.5),
+                                new Pose(21.0, 80)
                         )
                 )
                 .setConstantHeadingInterpolation(Math.toRadians(180))
@@ -141,9 +148,9 @@ public class BlueFRONTAuto extends OpMode {
         openGate = follower.pathBuilder()
                 .addPath(
                         new BezierCurve(
-                                new Pose(21.0, 80.000),
-                                new Pose(26.998, 73.651),
-                                new Pose(21.0, 74.164)
+                                new Pose(21.0, 79.5),
+                                new Pose(28, 74),
+                                new Pose(19, 74.5)
                         )
                 )
                 .setConstantHeadingInterpolation(Math.toRadians(180))
@@ -152,9 +159,9 @@ public class BlueFRONTAuto extends OpMode {
         launch1 = follower.pathBuilder()
                 .addPath(
                         new BezierCurve(
-                                new Pose(21.0, 74.164),
+                                new Pose(19, 74.5),
                                 new Pose(38.264, 74.313),
-                                new Pose(48.654, 85.150)
+                                new Pose(50, 88)
                         )
                 )
                 .setTangentHeadingInterpolation()
@@ -164,9 +171,9 @@ public class BlueFRONTAuto extends OpMode {
         lineUpFor2 = follower.pathBuilder()
                 .addPath(
                         new BezierCurve(
-                                new Pose(48.654, 85.150),
+                                new Pose(50, 88),
                                 new Pose(51.063, 62.032),
-                                new Pose(41.611, 58.000)
+                                new Pose(43, 58.000)
                         )
                 )
                 .setLinearHeadingInterpolation(Math.toRadians(225), Math.toRadians(180))
@@ -175,20 +182,19 @@ public class BlueFRONTAuto extends OpMode {
         intake2 = follower.pathBuilder()
                 .addPath(
                         new BezierLine(
-                                new Pose(41.611, 57.000),
-                                new Pose(23.906, 57.000)
+                                new Pose(43, 57.000),
+                                new Pose(21.0, 58)
                         )
                 )
                 .setConstantHeadingInterpolation(Math.toRadians(180))
-                .setReversed()
                 .build();
 
         launch2 = follower.pathBuilder()
                 .addPath(
                         new BezierCurve(
-                                new Pose(23.906, 57.000),
+                                new Pose(21, 58),
                                 new Pose(49.083, 63.440),
-                                new Pose(53.988, 78.137)
+                                new Pose(57, 78.137)
                         )
                 )
                 .setTangentHeadingInterpolation()
@@ -198,7 +204,7 @@ public class BlueFRONTAuto extends OpMode {
         firstLineUpFor3 = follower.pathBuilder()
                 .addPath(
                         new BezierLine(
-                                new Pose(53.988, 78.137),
+                                new Pose(57, 78.137),
                                 new Pose(44.937, 50.127)
                         )
                 )
@@ -209,7 +215,7 @@ public class BlueFRONTAuto extends OpMode {
                 .addPath(
                         new BezierLine(
                                 new Pose(44.937, 50.127),
-                                new Pose(41.914, 39.0)
+                                new Pose(43, 34.0)
                         )
                 )
                 .setLinearHeadingInterpolation(Math.toRadians(252), Math.toRadians(180))
@@ -218,8 +224,8 @@ public class BlueFRONTAuto extends OpMode {
         intake3 = follower.pathBuilder()
                 .addPath(
                         new BezierLine(
-                                new Pose(41.914, 39.0),
-                                new Pose(22.430, 40.106)
+                                new Pose(43, 34.0),
+                                new Pose(21, 34)
                         )
                 )
                 .setTangentHeadingInterpolation()
@@ -228,8 +234,8 @@ public class BlueFRONTAuto extends OpMode {
         launch3 = follower.pathBuilder()
                 .addPath(
                         new BezierLine(
-                                new Pose(22.430, 40.106),
-                                new Pose(54.313, 78.089)
+                                new Pose(21, 34),
+                                new Pose(58, 79)
                         )
                 )
                 .setTangentHeadingInterpolation()
@@ -239,7 +245,7 @@ public class BlueFRONTAuto extends OpMode {
         park = follower.pathBuilder()
                 .addPath(
                         new BezierLine(
-                                new Pose(54.313, 78.089),
+                                new Pose(58, 79.5),
                                 new Pose(48.307, 72.721)
                         )
                 )
@@ -250,21 +256,120 @@ public class BlueFRONTAuto extends OpMode {
     public void autoPathUpdate() {
         switch (pathState) {
             case 0:
-                follower.setMaxPower(1.0);
+                follower.setMaxPower(1);
                 follower.followPath(launch0);
                 setPathState(pathState + 1);
                 break;
             case 1:
-                if (pathTimer.getElapsedTimeSeconds() > 0.25) {
+                if (!follower.isBusy()) {
                     launchAllSwitch = 1;
+
+                    LLResult llResult = limelight.getLatestResult();
+                    List<LLResultTypes.FiducialResult> fiducials = llResult.getFiducialResults();
+                    for (LLResultTypes.FiducialResult fiducial : fiducials){
+                        id = fiducial.getFiducialId();
+                    }
+
                     setPathState(pathState + 1);
                 }
                 break;
             case 2:
-                if (!follower.isBusy() && launchAllSwitch == 0) {
+                if (launchAllSwitch == 0) {
                     follower.followPath(intake1);
                     follower.setMaxPower(0.7);
                     gateSwitch = 1;
+                    setPathState(pathState + 1);
+                }
+                break;
+            case 3:
+                if (!follower.isBusy() && (gateSwitch == 0 || pathTimer.getElapsedTimeSeconds() > 4)) {
+                    follower.followPath(openGate);
+                    follower.setMaxPower(1.0);
+                    setPathState(pathState + 1);
+                }
+                break;
+            case 4:
+                if (!follower.isBusy()) {
+                    setPathState(pathState + 1);
+                }
+                break;
+            case 5:
+                if (pathTimer.getElapsedTimeSeconds() > 0.1) {
+                    follower.followPath(launch1);
+                    follower.setMaxPower(1.0);
+                    setPathState(pathState + 1);
+                }
+                break;
+            case 6:
+                if (!follower.isBusy()) {
+                    launchAllSwitch = 1;
+                    setPathState(pathState + 1);
+                }
+                break;
+            case 7:
+                if (launchAllSwitch == 0) {
+                    follower.followPath(lineUpFor2);
+                    setPathState(pathState + 1);
+                }
+                break;
+            case 8:
+                if (!follower.isBusy()) {
+                    follower.followPath(intake2);
+                    gateSwitch = 1;
+                    follower.setMaxPower(0.7);
+                    setPathState(pathState + 1);
+                }
+                break;
+            case 9:
+                if (!follower.isBusy() && (gateSwitch == 0 || pathTimer.getElapsedTimeSeconds() > 4)) {
+                    follower.followPath(launch2);
+                    follower.setMaxPower(1.0);
+                    setPathState(pathState + 1);
+                }
+                break;
+            case 10:
+                if (!follower.isBusy()) {
+                    launchAllSwitch = 1;
+                    setPathState(pathState + 1);
+                }
+                break;
+            case 11:
+                if (launchAllSwitch == 0) {
+                    follower.followPath(firstLineUpFor3);
+                    setPathState(pathState + 1);
+                }
+                break;
+            case 12:
+                if (!follower.isBusy()) {
+                    follower.followPath(secondLineUpFor3);
+                    setPathState(pathState + 1);
+                }
+                break;
+            case 13:
+                if (!follower.isBusy()) {
+                    follower.followPath(intake3);
+                    gateSwitch = 1;
+                    follower.setMaxPower(0.7);
+                    setPathState(pathState + 1);
+                }
+                break;
+            case 14:
+                if (!follower.isBusy() && (gateSwitch == 0 || pathTimer.getElapsedTimeSeconds() > 4)) {
+                    follower.followPath(launch3);
+                    follower.setMaxPower(1.0);
+                    setPathState(pathState + 1);
+                }
+                break;
+            case 15:
+                if (!follower.isBusy()) {
+                    launchAllSwitch = 1;
+                    setPathState(pathState + 1);
+                }
+                break;
+            case 16:
+                if (launchAllSwitch == 0) {
+                    follower.followPath(park);
+                    parkTime = true;
                     setPathState(pathState + 1);
                 }
                 break;
@@ -292,6 +397,9 @@ public class BlueFRONTAuto extends OpMode {
         leftKickstand = hardwareMap.get(Servo.class, "Lstand");
         rightKickstand = hardwareMap.get(Servo.class, "Rstand");
         hood = hardwareMap.get(Servo.class, "hood");
+
+        limelight = hardwareMap.get(Limelight3A.class, "limelight");
+        limelight.pipelineSwitch(3);
 
 //        LTcolor = hardwareMap.get(NormalizedColorSensor.class, "LTcolor");
 //        LBcolor = hardwareMap.get(NormalizedColorSensor.class, "LBcolor");
@@ -359,33 +467,45 @@ public class BlueFRONTAuto extends OpMode {
     }
 
     public void start() {
-        spindexOffset = (int) ( ((absSpindex.getVoltage() / 3.3) * 4000) + 60);
+        spindexOffset = (int) ( ((absSpindex.getVoltage() / 3.3) * 4000) - 30);
         turretOffset  = (int) ( ((absTurret.getVoltage() / 3.3) * 4000) - 2550);
 
+        limelight.start();
         opmodeTimer.resetTimer();
     }
 
     public void loop() {
         follower.update();
-        calculations();
         turretPIDF();
         spindexPIDF();
         autoPathUpdate();
         launchAll();
         autoIntake();
+        if (opmodeTimer.getElapsedTimeSeconds() > 28) {
+            parkTime = true;
+        }
+        if (parkTime == false) {
+            calculations();
+        } else {
+            turretEncoder = 0;
+        }
+
+
 
         telemetryM = PanelsTelemetry.INSTANCE.getTelemetry();
 
 //         Feedback to Driver Hub for debugging
-        telemetry.addData("path state", pathState);
-        telemetry.addData("x", follower.getPose().getX());
-        telemetry.addData("y", follower.getPose().getY());
-        telemetry.addData("heading", follower.getPose().getHeading());
-        telemetry.addData("velocity", flywheel.getVelocity());
-        telemetry.addData("turret", turret.isBusy());
-        telemetry.addData("follower", follower.isBusy());
+//        telemetry.addData("path state", pathState);
+//        telemetry.addData("x", follower.getPose().getX());
+//        telemetry.addData("y", follower.getPose().getY());
+//        telemetry.addData("heading", follower.getPose().getHeading());
+//        telemetry.addData("velocity", flywheel.getVelocity());
+//        telemetry.addData("turret", turret.isBusy());
+//        telemetry.addData("follower", follower.isBusy());
+//
+//        telemetry.update();
 
-        telemetry.update();
+
 
     }
 
@@ -456,8 +576,6 @@ public class BlueFRONTAuto extends OpMode {
 
     public  void autoIntake() {
         switch (Robot.gateSwitch) {
-            case 0:
-                intake.setPower(-0.3);
             case 1:
                 intake.setPower(1.0);
                 if (gate.getState()) {
@@ -482,14 +600,23 @@ public class BlueFRONTAuto extends OpMode {
                 }
                 break;
             case 5:
+                if (gate.getState()) {
+                    Robot.gateSwitch++;
+                }
+                break;
+            case 6:
                 if (!gate.getState()) {
+                    Robot.gateSwitch++;
+                    runtime.reset();
+                }
+                break;
+            case 7:
+                if (runtime.seconds() > 0.25) {
+                    intake.setPower(-0.3);
                     Robot.gateSwitch = 0;
                 }
                 break;
         }
-
-
-
     }
 
     public static void spin1CW(){
@@ -505,7 +632,7 @@ public class BlueFRONTAuto extends OpMode {
     }
 
     public void spindexPIDF(){
-        spindexError = spindexPose - spindex.getCurrentPosition();
+        spindexError = spindexPose - spindex.getCurrentPosition() - spindexOffset;
         if (Math.abs(spindexError) > spindexAllowedError) {
             spindexIsBusy = true;
             spindexDerivative = (spindexError - spindexLastError) / spindexTimer.milliseconds();
@@ -522,7 +649,7 @@ public class BlueFRONTAuto extends OpMode {
     }
 
     public void turretPIDF(){
-        turretError =  turretEncoder - turret.getCurrentPosition();
+        turretError =  turretEncoder - turret.getCurrentPosition() - turretOffset;
         if (Math.abs(turretError) > turretAllowedError) {
             turretIsBusy = true;
             turretDerivative = (turretError - turretLastError) / turretTimer.milliseconds();
@@ -540,7 +667,7 @@ public class BlueFRONTAuto extends OpMode {
 
     public void calculations(){
         compedXGoal = Robot.xBlueGoal + xGoalCompConstant * follower.getVelocity().getXComponent();
-        compedYGoal = yGoal + yGoalCompConstant * follower.getVelocity().getYComponent();
+        compedYGoal = yBlueGoal + yGoalCompConstant * follower.getVelocity().getYComponent();
 
         double robotHeading = follower.getPose().getHeading();
 
@@ -558,8 +685,8 @@ public class BlueFRONTAuto extends OpMode {
             Robot.flywheelVelocity = Robot.velocityMin;
         }
 
-        Robot.angle1 = Robot.angleA * (Math.pow(flywheelVelocity , 2));
-        Robot.angle2 = Robot.angleB * flywheelVelocity;
+        Robot.angle1 = Robot.angleA * (Math.pow(turretDistanceToGoal , 2));
+        Robot.angle2 = Robot.angleB * turretDistanceToGoal;
         Robot.hoodAngle = (Robot.angle1 + Robot.angle2 + Robot.angleC);
         if (Robot.hoodAngle < Robot.hoodMax) {
             Robot.hoodAngle = Robot.hoodMax;

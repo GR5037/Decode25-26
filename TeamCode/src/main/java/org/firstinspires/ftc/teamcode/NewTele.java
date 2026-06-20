@@ -4,6 +4,12 @@ import static com.qualcomm.robotcore.hardware.DcMotor.ZeroPowerBehavior.BRAKE;
 import static com.qualcomm.robotcore.hardware.DcMotor.ZeroPowerBehavior.FLOAT;
 
 
+import static org.firstinspires.ftc.teamcode.Robot.fD;
+import static org.firstinspires.ftc.teamcode.Robot.fF;
+import static org.firstinspires.ftc.teamcode.Robot.fI;
+import static org.firstinspires.ftc.teamcode.Robot.fP;
+import static org.firstinspires.ftc.teamcode.Robot.flywheelAllowedError;
+import static org.firstinspires.ftc.teamcode.Robot.hoodAngle;
 import static org.firstinspires.ftc.teamcode.Robot.spindexAllowedError;
 import static org.firstinspires.ftc.teamcode.Robot.tD;
 import static org.firstinspires.ftc.teamcode.Robot.tF;
@@ -37,7 +43,8 @@ import static org.firstinspires.ftc.teamcode.Robot.xGoalCompConstant;
 import static org.firstinspires.ftc.teamcode.Robot.xPoseFromAuto;
 import static org.firstinspires.ftc.teamcode.Robot.xRedGoal;
 import static org.firstinspires.ftc.teamcode.Robot.xTurretPose;
-import static org.firstinspires.ftc.teamcode.Robot.yGoal;
+import static org.firstinspires.ftc.teamcode.Robot.yRedGoal;
+import static org.firstinspires.ftc.teamcode.Robot.yBlueGoal;
 import static org.firstinspires.ftc.teamcode.Robot.yGoalCompConstant;
 import static org.firstinspires.ftc.teamcode.Robot.yPoseFromAuto;
 import static org.firstinspires.ftc.teamcode.Robot.yTurretPose;
@@ -78,6 +85,7 @@ import java.util.List;
 
 
 //@Configurable
+
 @TeleOp(name = "NewTele", group = "Tele")
 public class NewTele extends OpMode {
     private Limelight3A limelight;
@@ -138,14 +146,16 @@ public class NewTele extends OpMode {
     static double spindexError = 0, spindexLastError = 0, spindexDerivative = 0, spindexIntegralSum = 0, spindexPower = 0;
     static boolean spindexIsBusy = false;
     static double turretError = 0, turretLastError = 0, turretDerivative = 0, turretIntegralSum = 0, turretPower = 0;
+    static double flywheelError = 0, flywheelLastError = 0, flywheelDerivative = 0, flywheelIntegralSum = 0, flywheelPower = 0;
     static boolean turretIsBusy = false;
+    static boolean flywheelIsBusy = false;
     int turretTracking = 1;
     int spindexTracking = 1;
-    double xGoal;
     double compedXGoal;
     double compedYGoal;
     static ElapsedTime spindexTimer = new ElapsedTime();
     static ElapsedTime turretTimer = new ElapsedTime();
+    static ElapsedTime flywheelTimer = new ElapsedTime();
 
 
 
@@ -274,9 +284,11 @@ public class NewTele extends OpMode {
 
         follower.setStartingPose(new Pose(xPoseFromAuto, yPoseFromAuto, headingFromAuto));
         if (teleIsRed) {
-            xGoal = Robot.xRedGoal;
+            Robot.xGoal = Robot.xRedGoal;
+            Robot.yGoal = Robot.yRedGoal;
         } else {
-            xGoal = Robot.xBlueGoal;
+            Robot.xGoal = Robot.xBlueGoal;
+            Robot.yGoal = Robot.yBlueGoal;
         }
         follower.startTeleOpDrive(true);
         runtime.reset();
@@ -362,8 +374,8 @@ public class NewTele extends OpMode {
         }
 
         //Calculations
-        compedXGoal = xGoal + xGoalCompConstant * follower.getVelocity().getXComponent();
-        compedYGoal = yGoal + yGoalCompConstant * follower.getVelocity().getYComponent();
+        compedXGoal = Robot.xGoal + xGoalCompConstant * follower.getVelocity().getXComponent();
+        compedYGoal = Robot.yGoal + yGoalCompConstant * follower.getVelocity().getYComponent();
 
         double robotHeading = follower.getPose().getHeading();
 
@@ -381,8 +393,8 @@ public class NewTele extends OpMode {
             Robot.flywheelVelocity = Robot.velocityMin;
         }
 
-        Robot.angle1 = Robot.angleA * (Math.pow(flywheelVelocity , 2));
-        Robot.angle2 = Robot.angleB * flywheelVelocity;
+        Robot.angle1 = Robot.angleA * (Math.pow(turretDistanceToGoal , 2));
+        Robot.angle2 = Robot.angleB * turretDistanceToGoal;
         Robot.hoodAngle = (Robot.angle1 + Robot.angle2 + Robot.angleC);
         if (Robot.hoodAngle < Robot.hoodMax) {
             Robot.hoodAngle = Robot.hoodMax;
@@ -445,6 +457,8 @@ public class NewTele extends OpMode {
         //Flywheel
         if (gamepad2.left_bumper) {
             Robot.flywheelOn = true;
+            PIDFCoefficients flywheelpidfCoefficients = new PIDFCoefficients(Robot.flyP, Robot.flyI, Robot.flyD, Robot.flyF);
+            flywheel.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, flywheelpidfCoefficients);
         } else if (gamepad2.right_bumper) {
             Robot.flywheelOn = false;
         }
@@ -457,41 +471,43 @@ public class NewTele extends OpMode {
         //Intake
         if (gamepad2.left_trigger > 0.1) {
             intake.setPower(gamepad2.left_trigger);
-            switch (Robot.gateSwitch) { //auto rotate spindex when ball enter (currently backwards b/c bad gate mechanism)
-                case 0:
-                    if (gate.getState()) {
-                        Robot.gateSwitch++;
-                    }
-                    break;
-                case 1:
-                    if (!gate.getState()) {
-                        spin1CW();
-                        Robot.gateSwitch++;
-                    }
-                    break;
-                case 2:
-                    if (gate.getState()) {
-                        Robot.gateSwitch++;
-                    }
-                    break;
-                case 3:
-                    if (!gate.getState()) {
-                        spin1CW();
-                        Robot.gateSwitch++;
-                    }
-                    break;
-                case 4:
-                    if (gate.getState()) {
-                        Robot.gateSwitch++;
-                    }
-                    break;
-                case 5:
-                    if (!gate.getState()) {
-                        gamepad1.rumble(400);
-                        gamepad2.rumble(400);
-                        Robot.gateSwitch++;
-                    }
-                    break;
+            if (launchAllSwitch == 0) {
+                switch (Robot.gateSwitch) { //auto rotate spindex when ball enter (currently backwards b/c bad gate mechanism)
+                    case 0:
+                        if (gate.getState()) {
+                            Robot.gateSwitch++;
+                        }
+                        break;
+                    case 1:
+                        if (!gate.getState()) {
+                            spin1CW();
+                            Robot.gateSwitch++;
+                        }
+                        break;
+                    case 2:
+                        if (gate.getState()) {
+                            Robot.gateSwitch++;
+                        }
+                        break;
+                    case 3:
+                        if (!gate.getState()) {
+                            spin1CW();
+                            Robot.gateSwitch++;
+                        }
+                        break;
+                    case 4:
+                        if (gate.getState()) {
+                            Robot.gateSwitch++;
+                        }
+                        break;
+                    case 5:
+                        if (!gate.getState()) {
+                            gamepad1.rumble(400);
+                            gamepad2.rumble(400);
+                            Robot.gateSwitch++;
+                        }
+                        break;
+                }
             }
         } else if (gamepad2.right_trigger > 0.1){
             intake.setPower(-gamepad2.right_trigger);
@@ -508,6 +524,14 @@ public class NewTele extends OpMode {
         }
         if (gamepad2.dpadRightWasPressed()) {
             spin1CW();
+        }
+
+        if (gamepad2.yWasPressed()) {
+            velocityC += 25;
+        }
+
+        if (gamepad2.xWasPressed()) {
+            velocityC -= 25;
         }
 
         //Launch
@@ -607,9 +631,9 @@ public class NewTele extends OpMode {
         //Eject current ball
         switch (Robot.ejectSwitch) {
             case 0:
-                if (gamepad2.dpad_up) {
-                    ejectSwitch++;
-                }
+//                if (gamepad2.dpad_up) {
+//                    ejectSwitch++;
+//                }
                 break;
             case 1:
                 queue.clear();
@@ -669,16 +693,21 @@ public class NewTele extends OpMode {
 //        telemetryM.debug(camPose.toString());
 //        telemetryM.debug(llResult.isValid());
 ////        telemetryM.debug("Follower:");
-        telemetryM.debug(follower.getPose().getX());
-        telemetryM.debug(follower.getPose().getY());
-        telemetryM.debug(follower.getPose().getHeading());
+//        telemetryM.addData("Distance", turretDistanceToGoal);
+//        telemetryM.addData("Angle", hoodAngle);
 //        telemetryM.debug(turretError);
 //        telemetryM.addData("error", turretError);
+//        telemetryM.addData("Goal", flywheelVelocity);
+//        telemetryM.addData("Current", flywheel.getVelocity());
+        telemetryM.addData("Pose", spindex.getCurrentPosition());
+        telemetryM.addData("Goal", spindexPose);
+        telemetryM.addData("Velocity C", velocityC);
 
 
-        while (loopTime.milliseconds() < 30) {
 
-        }
+//        while (loopTime.milliseconds() < 35) {
+//
+//        }
 //        telemetryM.addData("loop time", loopTime.milliseconds());
         telemetryM.update();
         telemetry.update();
@@ -758,6 +787,22 @@ public class NewTele extends OpMode {
             turretIsBusy = false;
         }
     }
+//    public static void flywheelPIDF(){
+//        flywheelError =  turretEncoder - flywheel.getCurrentPosition();
+//        if (Math.abs(flywheelError) > flywheelAllowedError) {
+//            flywheelIsBusy = true;
+//            flywheelDerivative = (flywheelError - flywheelLastError) / flywheelTimer.milliseconds();
+//            flywheelIntegralSum = flywheelIntegralSum + (flywheelError * flywheelTimer.milliseconds());
+//            flywheelPower = (fF * Math.signum(flywheelError)) + (fP * flywheelError) + (fI * flywheelIntegralSum) + (fD * flywheelDerivative);
+//
+//            flywheel.setPower(flywheelPower);
+//            flywheelLastError = flywheelError;
+//            flywheelTimer.reset();
+//        } else {
+//            flywheel.setPower(0);
+//            flywheelIsBusy = false;
+//        }
+//    }
 
     public void backStatus() {
         if ((BBdist.getDistance(DistanceUnit.CM) > 5) || (BTdist.getDistance(DistanceUnit.CM) > 5)) {

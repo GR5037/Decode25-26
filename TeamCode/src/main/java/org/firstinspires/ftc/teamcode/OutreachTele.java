@@ -24,7 +24,7 @@ import static org.firstinspires.ftc.teamcode.Robot.xBlueGoal;
 import static org.firstinspires.ftc.teamcode.Robot.xPoseFromAuto;
 import static org.firstinspires.ftc.teamcode.Robot.xRedGoal;
 import static org.firstinspires.ftc.teamcode.Robot.xTurretPose;
-import static org.firstinspires.ftc.teamcode.Robot.yGoal;
+import static org.firstinspires.ftc.teamcode.Robot.yRedGoal;
 import static org.firstinspires.ftc.teamcode.Robot.yPoseFromAuto;
 import static org.firstinspires.ftc.teamcode.Robot.yTurretPose;
 import com.qualcomm.hardware.lynx.LynxModule;
@@ -297,7 +297,7 @@ public class OutreachTele extends OpMode {
 //        Robot.xTurretPose = follower.getPose().getX() + 2.7062 * (Math.cos(robotHeading + Math.toRadians(85.24)));
 //        Robot.yTurretPose = follower.getPose().getY() + 2.7062 * (Math.sin(robotHeading + Math.toRadians(85.24)));
 //
-//        Robot.turretDistanceToGoal = Math.hypot(Robot.xTurretPose - Robot.xRedGoal, Robot.yTurretPose - Robot.yGoal);
+//        Robot.turretDistanceToGoal = Math.hypot(Robot.xTurretPose - Robot.xRedGoal, Robot.yTurretPose - Robot.yRedGoal);
 //
 //        Robot.velocity1 = Robot.velocityA * (Math.pow(Robot.turretDistanceToGoal, 2));
 //        Robot.velocity2 = Robot.velocityB * Robot.turretDistanceToGoal;
@@ -319,7 +319,7 @@ public class OutreachTele extends OpMode {
 //
 //
 //
-//        currentTurretAngle = Math.atan2((yGoal - yTurretPose),(xRedGoal - xTurretPose)) - robotHeading;
+//        currentTurretAngle = Math.atan2((yRedGoal - yTurretPose),(xRedGoal - xTurretPose)) - robotHeading;
 //        deltaTargetAngle = currentTurretAngle - lastTurretAngle;
 //        if (deltaTargetAngle < -Math.PI){
 //            deltaTargetAngle += 2 * Math.PI;

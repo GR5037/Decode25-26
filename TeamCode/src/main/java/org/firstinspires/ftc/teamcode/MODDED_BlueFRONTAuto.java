@@ -5,7 +5,6 @@ import static com.qualcomm.robotcore.hardware.DcMotor.ZeroPowerBehavior.FLOAT;
 import static org.firstinspires.ftc.teamcode.Robot.dexP;
 import static org.firstinspires.ftc.teamcode.Robot.flywheelVelocity;
 import static org.firstinspires.ftc.teamcode.Robot.gateSwitch;
-import static org.firstinspires.ftc.teamcode.Robot.hoodAngle;
 import static org.firstinspires.ftc.teamcode.Robot.launchAllSwitch;
 import static org.firstinspires.ftc.teamcode.Robot.numberOfSpins;
 import static org.firstinspires.ftc.teamcode.Robot.sD;
@@ -20,6 +19,13 @@ import static org.firstinspires.ftc.teamcode.Robot.tI;
 import static org.firstinspires.ftc.teamcode.Robot.tP;
 import static org.firstinspires.ftc.teamcode.Robot.teleIsRed;
 import static org.firstinspires.ftc.teamcode.Robot.turretAllowedError;
+import static org.firstinspires.ftc.teamcode.Robot.turretCompConstant;
+import static org.firstinspires.ftc.teamcode.Robot.turretDistanceToGoal;
+import static org.firstinspires.ftc.teamcode.Robot.xGoalCompConstant;
+import static org.firstinspires.ftc.teamcode.Robot.xTurretPose;
+import static org.firstinspires.ftc.teamcode.Robot.yBlueGoal;
+import static org.firstinspires.ftc.teamcode.Robot.yGoalCompConstant;
+import static org.firstinspires.ftc.teamcode.Robot.yTurretPose;
 
 import com.bylazar.telemetry.PanelsTelemetry;
 import static java.lang.Thread.sleep;
@@ -33,6 +39,9 @@ import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.Path;
 import com.pedropathing.paths.PathChain;
 import com.pedropathing.util.Timer;
+import com.qualcomm.hardware.limelightvision.LLResult;
+import com.qualcomm.hardware.limelightvision.LLResultTypes;
+import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.AnalogInput;
@@ -46,14 +55,12 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 
-@Autonomous(name = "RED BACK Auto", group = "Auto",  preselectTeleOp= "NewTele")
+import java.util.List;
 
-public class RedBACKAuto extends OpMode {
-     int Motif = 1; //1=GPP 2=PGP 3=PPG
+@Autonomous(name = "MODDED BLUE FRONT Auto", group = "Auto",  preselectTeleOp= "NewTele")
 
-     double hoodPosition = 0.27;
-     double flywheelVelocity = 1875;
-     double velocityMin = flywheelVelocity - 100;
+public class MODDED_BlueFRONTAuto extends OpMode {
+    int Motif = 1; //1=GPP 2=PGP 3=PPG
     int turretOffset = 0;
     int spindexOffset = 0;
     boolean parkTime = false;
@@ -68,12 +75,12 @@ public class RedBACKAuto extends OpMode {
     static Servo leftKickstand;
     static Servo rightKickstand;
     static Servo hood;
-//    static ColorRangeSensor LTcolor;
-//    static ColorRangeSensor LBcolor;
-//    static ColorRangeSensor BTcolor;
-//    static ColorRangeSensor BBcolor;
-//    static ColorRangeSensor RTcolor;
-//    static ColorRangeSensor RBcolor;
+    static ColorRangeSensor LTcolor;
+    static ColorRangeSensor LBcolor;
+    static ColorRangeSensor BTcolor;
+    static ColorRangeSensor BBcolor;
+    static ColorRangeSensor RTcolor;
+    static ColorRangeSensor RBcolor;
     static DcMotorEx spindex;
     static DcMotorEx flywheel;
     static DcMotorEx intake;
@@ -82,150 +89,318 @@ public class RedBACKAuto extends OpMode {
     static AnalogInput absTurret;
     static AnalogInput absSpindex;
     private TelemetryManager telemetryM;
-
-    private final Pose startPose = new Pose(88, 7.54, Math.toRadians(90));
-    private final Pose launchPosition = new Pose(88, 20, Math.toRadians(0));
-    private final Pose lineUpPose = new Pose(92, 10, Math.toRadians(0));
-    private final Pose intakeIn = new Pose(132, 10, Math.toRadians(0));
-    private final Pose intakeOut = new Pose(127, 10, Math.toRadians(0));
-    private final Pose park = new Pose(110, 20, Math.toRadians(0));
-    private final Pose lineUpForSpike = new Pose(101,37,Math.toRadians(0));
-    private final Pose intakeSpike = new Pose(125,37,Math.toRadians(0));
-    private final Pose launchSpike = new Pose(88,20,Math.toRadians(0));
-
-    private PathChain launchToIntake;
-    private Path  launchPreload,  intakingOut, secondIntakingIn, launch, liningup, intakingSpike, launchingSpike;
     private Follower follower;
     private Timer pathTimer, actionTimer, opmodeTimer;
     private int pathState;
+    static ElapsedTime runtime = new ElapsedTime();
+    public PathChain launch0;
+    public PathChain intake1;
+    public PathChain openGate;
+    public PathChain launch1;
+    public PathChain lineUpFor2;
+    public PathChain intake2;
+    public PathChain launch2;
+    public PathChain firstLineUpFor3;
+    public PathChain secondLineUpFor3;
+    public PathChain intake3;
+    public PathChain launch3;
+    public PathChain park;
+    public PathChain goOpenGate;
+
+    public Pose startPose = new Pose(28.84, 127.54, 2.452);
     static double spindexError = 0, spindexLastError = 0, spindexDerivative = 0, spindexIntegralSum = 0, spindexPower = 0;
     static boolean spindexIsBusy = false;
     static double turretError = 0, turretLastError = 0, turretDerivative = 0, turretIntegralSum = 0, turretPower = 0;
     static boolean turretIsBusy = false;
+    double compedXGoal;
+    double compedYGoal;
+    double currentTurretAngle = 0;
+    double deltaTargetAngle = 0;
+    double lastTurretAngle = 0;
+    double totalTurretAngle = 0;
     static int turretEncoder = 0;
     static ElapsedTime spindexTimer = new ElapsedTime();
     static ElapsedTime turretTimer = new ElapsedTime();
-    static ElapsedTime runtime = new ElapsedTime();
+    private Limelight3A limelight;
+    int id;
 
     private void buildPaths() {
-        launchPreload = new Path(new BezierLine(startPose, launchPosition));
-        launchPreload.setLinearHeadingInterpolation(startPose.getHeading(), launchPosition.getHeading());
+        launch0 = follower.pathBuilder()
+                .addPath(
+                        new BezierLine(
+                                new Pose(28.840, 127.540),
+                                new Pose(50.00, 79.5)
+                        )
+                )
+                .setTangentHeadingInterpolation()
+                .setReversed()
+                .build();
 
-        launchToIntake = follower.pathBuilder()
-            .addPath(new BezierLine(launchPosition, lineUpPose))
-            .setConstantHeadingInterpolation(lineUpPose.getHeading())
-            .addPath(new BezierLine(lineUpPose, intakeIn))
-            .setConstantHeadingInterpolation(intakeIn.getHeading())
-            .build();
+        intake1 = follower.pathBuilder()
+                .addPath(
+                        new BezierLine(
+                                new Pose(50, 79.5),
+                                new Pose(21.0, 80)
+                        )
+                )
+                .setConstantHeadingInterpolation(Math.toRadians(180))
+                .build();
 
-        intakingOut = new Path(new BezierLine(intakeIn, intakeOut));
-        intakingOut.setConstantHeadingInterpolation(intakeOut.getHeading());
+        openGate = follower.pathBuilder()
+                .addPath(
+                        new BezierCurve(
+                                new Pose(21.0, 80),
+                                new Pose(30, 76),
+                                new Pose(19, 74.5)
+                        )
+                )
+                .setConstantHeadingInterpolation(Math.toRadians(180))
+                .build();
 
-        secondIntakingIn = new Path(new BezierLine(intakeOut, intakeIn));
-        secondIntakingIn.setConstantHeadingInterpolation(intakeIn.getHeading());
+        launch1 = follower.pathBuilder()
+                .addPath(
+                        new BezierCurve(
+                                new Pose(19, 74.5),
+                                new Pose(38.264, 74.313),
+                                new Pose(50, 88)
+                        )
+                )
+                .setTangentHeadingInterpolation()
+                .setReversed()
+                .build();
 
-        launch = new Path(new BezierLine(intakeIn, launchPosition));
-        launch.setConstantHeadingInterpolation(launchPosition.getHeading());
+        lineUpFor2 = follower.pathBuilder()
+                .addPath(
+                        new BezierCurve(
+                                new Pose(50, 88),
+                                new Pose(51.063, 62.032),
+                                new Pose(43, 58.000)
+                        )
+                )
+                .setLinearHeadingInterpolation(Math.toRadians(225), Math.toRadians(180))
+                .build();
 
-        liningup = new Path(new BezierLine(launchPosition, lineUpForSpike));
-        liningup.setConstantHeadingInterpolation(lineUpForSpike.getHeading());
+        intake2 = follower.pathBuilder()
+                .addPath(
+                        new BezierLine(
+                                new Pose(43, 58),
+                                new Pose(17.0, 57)
+                        )
+                )
+                .setConstantHeadingInterpolation(Math.toRadians(180))
+                .build();
 
-        intakingSpike = new Path(new BezierLine(lineUpForSpike, intakeSpike));
-        intakingSpike.setConstantHeadingInterpolation(intakeSpike.getHeading());
+        launch2 = follower.pathBuilder()
+                .addPath(
+                        new BezierCurve(
+                                new Pose(17.0, 57),
+                                new Pose(49.083, 63.440),
+                                new Pose(57, 78.137)
+                        )
+                )
+                .setTangentHeadingInterpolation()
+                .setReversed()
+                .build();
 
-        launchingSpike = new Path(new BezierLine(intakeSpike,launchSpike));
-        launchingSpike.setConstantHeadingInterpolation(launchSpike.getHeading());
+        goOpenGate = follower.pathBuilder()
+                .addPath(
+                        new BezierLine(
+                                new Pose(57, 78.137),
+                                new Pose(19.5, 74.5)
+                        )
+                )
+                .setConstantHeadingInterpolation(Math.toRadians(180))
+                .build();
+
+//        firstLineUpFor3 = follower.pathBuilder()
+//                .addPath(
+//                        new BezierLine(
+//                                new Pose(57, 78.137),
+//                                new Pose(44.937, 50.127)
+//                        )
+//                )
+//                .setTangentHeadingInterpolation()
+//                .build();
+//
+//        secondLineUpFor3 = follower.pathBuilder()
+//                .addPath(
+//                        new BezierLine(
+//                                new Pose(44.937, 50.127),
+//                                new Pose(43, 34.0)
+//                        )
+//                )
+//                .setLinearHeadingInterpolation(Math.toRadians(252), Math.toRadians(180))
+//                .build();
+//
+//        intake3 = follower.pathBuilder()
+//                .addPath(
+//                        new BezierLine(
+//                                new Pose(43, 34.0),
+//                                new Pose(21, 34)
+//                        )
+//                )
+//                .setTangentHeadingInterpolation()
+//                .build();
+//
+//        launch3 = follower.pathBuilder()
+//                .addPath(
+//                        new BezierLine(
+//                                new Pose(21, 34),
+//                                new Pose(58, 79)
+//                        )
+//                )
+//                .setTangentHeadingInterpolation()
+//                .setReversed()
+//                .build();
+//
+        park = follower.pathBuilder()
+                .addPath(
+                        new BezierLine(
+                                new Pose(19.5, 74.5),
+                                new Pose(25, 74.5)
+                        )
+                )
+                .setConstantHeadingInterpolation(Math.toRadians(180))
+                .build();
     }
 
     public void autoPathUpdate() {
         switch (pathState) {
             case 0:
-                follower.setMaxPower(1.0);
-                flywheel.setVelocity(flywheelVelocity);
-                hood.setPosition(hoodPosition);
-                aimTurret(68);
-                follower.followPath(launchPreload);
+                follower.setMaxPower(1);
+                follower.followPath(launch0);
                 setPathState(pathState + 1);
                 break;
             case 1:
-                if (!follower.isBusy() && (flywheel.getVelocity() > velocityMin) && !spindexIsBusy) {
+                if (!follower.isBusy()) {
                     launchAllSwitch = 1;
                     setPathState(pathState + 1);
                 }
                 break;
             case 2:
-                if (launchAllSwitch > 6) {
-                    follower.followPath(launchToIntake);
+                if (launchAllSwitch == 0) {
+                    follower.followPath(intake1);
+                    follower.setMaxPower(0.5);
                     gateSwitch = 1;
                     setPathState(pathState + 1);
                 }
                 break;
             case 3:
-                if (follower.getPose().getX() > 131 || !follower.isBusy()) {
-                    follower.followPath(intakingOut);
+                if (!follower.isBusy() && (gateSwitch == 0 || pathTimer.getElapsedTimeSeconds() > 3)) {
+                    follower.followPath(openGate);
+                    follower.setMaxPower(0.7);
                     setPathState(pathState + 1);
                 }
                 break;
             case 4:
-                if (gateSwitch > 2 || pathTimer.getElapsedTimeSeconds() > 2) {
-                    follower.followPath(secondIntakingIn);
+                if (!follower.isBusy()) {
                     setPathState(pathState + 1);
                 }
                 break;
             case 5:
-                if (gateSwitch > 6 || pathTimer.getElapsedTimeSeconds() > 2) {
-                    follower.followPath(launch);
+                if (pathTimer.getElapsedTimeSeconds() > .5) {
+                    follower.followPath(launch1);
+                    follower.setMaxPower(1.0);
                     setPathState(pathState + 1);
                 }
                 break;
             case 6:
                 if (!follower.isBusy()) {
-                    gateSwitch = 0;
                     launchAllSwitch = 1;
                     setPathState(pathState + 1);
                 }
                 break;
             case 7:
-                if (launchAllSwitch > 6){
-                    follower.followPath(liningup);
-                    gateSwitch = 1;
+                if (launchAllSwitch == 0) {
+                    follower.followPath(lineUpFor2);
                     setPathState(pathState + 1);
                 }
                 break;
             case 8:
-                if (!follower.isBusy()){
-                    follower.followPath(intakingSpike);
-                    follower.setMaxPower(0.7);
+                if (!follower.isBusy()) {
+                    follower.followPath(intake2);
+                    gateSwitch = 1;
+                    follower.setMaxPower(0.5);
                     setPathState(pathState + 1);
                 }
                 break;
             case 9:
-                if (gateSwitch > 6 || pathTimer.getElapsedTimeSeconds() > 2) {
-                    follower.followPath(launchingSpike);
+                if (!follower.isBusy() && (gateSwitch == 0 || pathTimer.getElapsedTimeSeconds() > 4)) {
+                    follower.followPath(launch2);
+                    follower.setMaxPower(1.0);
                     setPathState(pathState + 1);
                 }
                 break;
             case 10:
                 if (!follower.isBusy()) {
-                    gateSwitch = 0;
                     launchAllSwitch = 1;
                     setPathState(pathState + 1);
                 }
                 break;
             case 11:
-                if (launchAllSwitch > 6) {
-                    follower.followPath(launchToIntake);
-                    gateSwitch = 1;
+                if (pathTimer.getElapsedTimeSeconds() > 3) {
+                    follower.followPath(goOpenGate);
+                    follower.setMaxPower(0.7);
                     setPathState(pathState + 1);
                 }
                 break;
             case 12:
-                if (!follower.isBusy() && pathTimer.getElapsedTimeSeconds() > 2) {
-                    follower.followPath(launch);
-                    setPathState(10);
+                if (!follower.isBusy()) {
+                    setPathState(pathState + 1);
                 }
                 break;
+            case 13:
+                if (pathTimer.getElapsedTimeSeconds() > 1.5) {
+                    follower.followPath(park);
+                    follower.setMaxPower(0.7);
+                    setPathState(pathState + 1);
+                }
+                break;
+            case 14:
+                if (!follower.isBusy()) {
 
+                }
+                break;
+//            case 11:
+//                if (launchAllSwitch == 0) {
+//                    follower.followPath(firstLineUpFor3);
+//                    setPathState(pathState + 1);
+//                }
+//                break;
+//            case 12:
+//                if (!follower.isBusy()) {
+//                    follower.followPath(secondLineUpFor3);
+//                    setPathState(pathState + 1);
+//                }
+//                break;
+//            case 13:
+//                if (!follower.isBusy()) {
+//                    follower.followPath(intake3);
+//                    gateSwitch = 1;
+//                    follower.setMaxPower(0.7);
+//                    setPathState(pathState + 1);
+//                }
+//                break;
+//            case 14:
+//                if (!follower.isBusy() && (gateSwitch == 0 || pathTimer.getElapsedTimeSeconds() > 4)) {
+//                    follower.followPath(launch3);
+//                    follower.setMaxPower(1.0);
+//                    setPathState(pathState + 1);
+//                }
+//                break;
+//            case 15:
+//                if (!follower.isBusy()) {
+//                    launchAllSwitch = 1;
+//                    setPathState(pathState + 1);
+//                }
+//                break;
+//            case 16:
+//                if (launchAllSwitch == 0) {
+//                    follower.followPath(park);
+//                    parkTime = true;
+//                    setPathState(pathState + 1);
+//                }
+//                break;
         }
     }
 
@@ -235,7 +410,6 @@ public class RedBACKAuto extends OpMode {
     }
 
     public void init() {
-
 
         leftFrontDrive = hardwareMap.get(DcMotorEx.class, "fl");
         rightFrontDrive = hardwareMap.get(DcMotorEx.class, "fr");
@@ -251,6 +425,9 @@ public class RedBACKAuto extends OpMode {
         leftKickstand = hardwareMap.get(Servo.class, "Lstand");
         rightKickstand = hardwareMap.get(Servo.class, "Rstand");
         hood = hardwareMap.get(Servo.class, "hood");
+
+        limelight = hardwareMap.get(Limelight3A.class, "limelight");
+        limelight.pipelineSwitch(3);
 
 //        LTcolor = hardwareMap.get(NormalizedColorSensor.class, "LTcolor");
 //        LBcolor = hardwareMap.get(NormalizedColorSensor.class, "LBcolor");
@@ -318,29 +495,33 @@ public class RedBACKAuto extends OpMode {
     }
 
     public void start() {
-        spindexOffset = (int) ( ((absSpindex.getVoltage() / 3.3) * 4000) -30);
+        spindexOffset = (int) ( ((absSpindex.getVoltage() / 3.3) * 4000) - 30);
         turretOffset  = (int) ( ((absTurret.getVoltage() / 3.3) * 4000) - 2550);
 
+        limelight.start();
         opmodeTimer.resetTimer();
     }
 
     public void loop() {
         follower.update();
-        autoPathUpdate();
         turretPIDF();
         spindexPIDF();
+        autoPathUpdate();
         launchAll();
         autoIntake();
-
-        if (opmodeTimer.getElapsedTimeSeconds() > 27 && !parkTime) {
-            launchAllSwitch = 0;
-            gateSwitch = 0;
-            aimTurret(0);
-            follower.breakFollowing();
-            follower.holdPoint(park);
+        if (opmodeTimer.getElapsedTimeSeconds() > 28) {
             parkTime = true;
-            setPathState(-1);
         }
+        if (parkTime == false) {
+            calculations();
+        } else {
+            turretEncoder = 0;
+        }
+
+
+
+        telemetryM = PanelsTelemetry.INSTANCE.getTelemetry();
+
 //         Feedback to Driver Hub for debugging
 //        telemetry.addData("path state", pathState);
 //        telemetry.addData("x", follower.getPose().getX());
@@ -349,21 +530,19 @@ public class RedBACKAuto extends OpMode {
 //        telemetry.addData("velocity", flywheel.getVelocity());
 //        telemetry.addData("turret", turret.isBusy());
 //        telemetry.addData("follower", follower.isBusy());
-
 //
-
 //        telemetry.update();
+
     }
 
     public void stop() {
         Robot.xPoseFromAuto = follower.getPose().getX();
         Robot.yPoseFromAuto = follower.getPose().getY();
         Robot.headingFromAuto = follower.getHeading();
-        Robot.teleIsRed = true;
+        Robot.teleIsRed = false;
     }
 
-
-    public  void launchAll() {
+    public  void  launchAll() {
         switch (Robot.launchAllSwitch) { //launch all balls
             case 1:
                 transfer.setPosition(Robot.transfer1);
@@ -511,11 +690,54 @@ public class RedBACKAuto extends OpMode {
         }
     }
 
-    public  void aimTurret(double turretPose) {
-        turretEncoder = (int) (((turretPose) /360) * 13332);
+    public void calculations(){
+        compedXGoal = Robot.xBlueGoal + xGoalCompConstant * follower.getVelocity().getXComponent();
+        compedYGoal = yBlueGoal + yGoalCompConstant * follower.getVelocity().getYComponent();
+
+        double robotHeading = follower.getPose().getHeading();
+
+        Robot.xTurretPose = follower.getPose().getX() + 2.7062 * (Math.cos(robotHeading + Math.toRadians(85.24)));
+        Robot.yTurretPose = follower.getPose().getY() + 2.7062 * (Math.sin(robotHeading + Math.toRadians(85.24)));
+
+        Robot.turretDistanceToGoal = Math.hypot(Robot.xTurretPose - compedXGoal, Robot.yTurretPose - compedYGoal);
+
+        Robot.velocity1 = Robot.velocityA * (Math.pow(Robot.turretDistanceToGoal, 2));
+        Robot.velocity2 = Robot.velocityB * Robot.turretDistanceToGoal;
+        Robot.flywheelVelocity = (int) (Robot.velocity1 + Robot.velocity2 + Robot.velocityC);
+        if (Robot.flywheelVelocity > Robot.velocityMax) {
+            Robot.flywheelVelocity = Robot.velocityMax;
+        } else if (Robot.flywheelVelocity < Robot.velocityMin) {
+            Robot.flywheelVelocity = Robot.velocityMin;
+        }
+
+        Robot.angle1 = Robot.angleA * (Math.pow(turretDistanceToGoal , 2));
+        Robot.angle2 = Robot.angleB * turretDistanceToGoal;
+        Robot.hoodAngle = (Robot.angle1 + Robot.angle2 + Robot.angleC);
+        if (Robot.hoodAngle < Robot.hoodMax) {
+            Robot.hoodAngle = Robot.hoodMax;
+        } else if (Robot.hoodAngle > Robot.hoodMin) {
+            Robot.hoodAngle = Robot.hoodMin;
+        }
+
+        currentTurretAngle = Math.atan2((compedYGoal - yTurretPose),(compedXGoal - xTurretPose)) - robotHeading;
+        deltaTargetAngle = currentTurretAngle - lastTurretAngle;
+        if (deltaTargetAngle < -Math.PI){
+            deltaTargetAngle += 2 * Math.PI;
+        } else if (deltaTargetAngle > Math.PI) {
+            deltaTargetAngle -= 2 * Math.PI;
+        }
+        totalTurretAngle += deltaTargetAngle;
+        if (totalTurretAngle < -Math.toRadians(300)){
+            totalTurretAngle = Math.PI / 2;
+        } else if (totalTurretAngle > Math.toRadians(300)){
+            totalTurretAngle = -Math.PI / 2;
+        }
+        lastTurretAngle = totalTurretAngle;
+        turretEncoder = (int) ((totalTurretAngle / (2 * Math.PI)) * 13332);
+        turretEncoder = (int) (turretEncoder + turretCompConstant * follower.getAngularVelocity());
+
+        hood.setPosition(Robot.hoodAngle);
+        flywheel.setVelocity(flywheelVelocity);
     }
 
 }
-
-
-

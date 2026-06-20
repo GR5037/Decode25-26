@@ -18,6 +18,7 @@ import com.pedropathing.paths.Path;
 import com.pedropathing.paths.PathChain;
 import com.pedropathing.util.Timer;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.AnalogInput;
 import com.qualcomm.robotcore.hardware.ColorRangeSensor;
@@ -31,7 +32,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 
 @Autonomous(name = "Early BLUE BACK Auto", group = "Auto",  preselectTeleOp= "BlueTele")
-
+@Disabled
 public class BlueEarlyBACKAuto extends OpMode {
     int Motif = 1; //1=GPP 2=PGP 3=PPG
     double hoodPosition = 0.25;
@@ -113,7 +114,7 @@ public class BlueEarlyBACKAuto extends OpMode {
                 spindex.setTargetPosition(-spindexOffset);
                 spindex.setMode(DcMotor.RunMode.RUN_TO_POSITION);
                 spindex.setPower(1.0);
-                aimTurret(-68);
+                aimTurret(-66);
                 follower.followPath(launchPreload);
                 setPathState(pathState + 1);
                 break;

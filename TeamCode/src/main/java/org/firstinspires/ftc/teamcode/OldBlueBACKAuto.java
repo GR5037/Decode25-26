@@ -18,6 +18,7 @@ import com.pedropathing.paths.Path;
 import com.pedropathing.paths.PathChain;
 import com.pedropathing.util.Timer;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.AnalogInput;
 import com.qualcomm.robotcore.hardware.ColorRangeSensor;
@@ -31,7 +32,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 
 @Autonomous(name = "OLD BLUE BACK Auto", group = "Auto",  preselectTeleOp= "BlueTele")
-
+@Disabled
 public class OldBlueBACKAuto extends OpMode {
     int Motif = 1; //1=GPP 2=PGP 3=PPG
     double hoodPosition = 0.25;

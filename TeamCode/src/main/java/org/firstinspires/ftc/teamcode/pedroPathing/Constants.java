@@ -43,8 +43,8 @@ public class Constants {
             .strafeEncoderDirection(GoBildaPinpointDriver.EncoderDirection.FORWARD);
 
     public static PathConstraints pathConstraints = new PathConstraints(
-            0.99,
-            100,
+            0.95,
+            75,
             1,
             1
     );
